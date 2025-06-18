@@ -10,7 +10,7 @@
     "start:designer": "cd designer && npm start",
     "start:client": "cd client && npm start",
     "build:designer": "cd designer && npm run build:prod",
-    "build:client": "cd client && npm run build",
+    "build:client": "cd client && npm run build:prod",
     "build:all": "npm run build:designer && npm run build:client",
     "install:all": "npm install && npm run install:designer && npm run install:client",
     "install:designer": "cd designer && npm install",
