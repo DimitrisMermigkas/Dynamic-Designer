@@ -25,6 +25,8 @@
     "publish:dev": "cross-env NODE_ENV=development node tools/publish.js",
     "publish:prod": "cross-env NODE_ENV=testprod node tools/publish.js",
     "buildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs",
+    "buildPackage:obfuscated": "rimraf dist && rollup -c --bundleConfigAsCjs && npm run obfuscatePackage",
+    "obfuscatePackage": "javascript-obfuscator ./dist/cjs/index.js --output ./dist/cjs/index.js --config obfuscator.config.js && javascript-obfuscator ./dist/esm/index.js --output ./dist/esm/index.js --config obfuscator.config.js",
     "watchBuildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs --watch"
   },
   "dependencies": {
@@ -34,6 +36,7 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/cron-converter": "^1.0.1",
     "cron-converter": "^2.1.0",
+    "javascript-obfuscator": "^4.1.1",
     "moment": "^2.29.3",
     "react-scripts": "5.0.1",
     "tinycolor2": "^1.6.0",
