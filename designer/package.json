@@ -26,9 +26,9 @@
     "publish:prod": "cross-env NODE_ENV=testprod node tools/publish.js",
     "buildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs",
     "buildPackage:obfuscated": "rimraf dist && rollup -c --bundleConfigAsCjs && npm run obfuscatePackage",
-    "obfuscatePackage": "javascript-obfuscator ./dist/cjs/index.js --output ./dist/cjs/index.js --config obfuscator.config.js && javascript-obfuscator ./dist/esm/index.js --output ./dist/esm/index.js --config obfuscator.config.js",
+    "obfuscatePackage": "javascript-obfuscator ./dist/cjs/index.js --output ./dist/cjs/index.js  && javascript-obfuscator ./dist/esm/index.js --output ./dist/esm/index.js  && javascript-obfuscator ./build/static/js --output ./build/static/js",
     "watchBuildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs --watch",
-    "build:prod": "npm run buildPackage:obfuscated"
+    "build:prod": "npm run build && npm run buildPackage:obfuscated"
   },
   "dependencies": {
     "@emotion/css": "^11.11.2",
