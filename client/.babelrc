@@ -1,0 +1,20 @@
+{
+  "presets": [
+    "@babel/preset-env",  //tells webpack to compile all syntax to ES5 (which browsers understand)
+    "@babel/preset-react" //adds support for jsx syntax
+  ],
+  "env": {
+    // "development": {
+    //   "presets": [
+    //     "react-hot"
+    //   ]
+    // },
+    "production": {
+      "plugins": [
+        "@babel/plugin-transform-react-constant-elements",
+        "transform-react-remove-prop-types",
+        ["@babel/plugin-proposal-class-properties", { "loose": true }]
+      ]
+    }
+  }
+}

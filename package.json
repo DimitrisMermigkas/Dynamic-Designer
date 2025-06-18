@@ -1,0 +1,36 @@
+{
+  "name": "design-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "designer",
+    "client"
+  ],
+  "scripts": {
+    "start:designer": "cd designer && npm start",
+    "start:client": "cd client && npm start",
+    "build:designer": "cd designer && npm run build:prod",
+    "build:client": "cd client && npm run build",
+    "build:all": "npm run build:designer && npm run build:client",
+    "install:all": "npm install && npm run install:designer && npm run install:client",
+    "install:designer": "cd designer && npm install",
+    "install:client": "cd client && npm install"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rollup": "^4.10.0",
+    "swiper": "^11.2.8",
+    "uuid": "^10.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/uuid": "^10.0.0",
+    "dotenv": "^16.4.1",
+    "typescript": "^5.3.3"
+  }
+}
