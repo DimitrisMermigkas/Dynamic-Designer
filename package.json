@@ -15,7 +15,7 @@
     "install:all": "npm install && npm run install:designer && npm run install:client",
     "install:designer": "cd designer && npm install",
     "install:client": "cd client && npm install",
-    "build:prod": "cd designer && npm run build:prod && cd ../client && npm run build:prod"
+    "build:prod": "cd client && npm run build:prod"
   },
   "dependencies": {
     "react": "^18.3.1",
