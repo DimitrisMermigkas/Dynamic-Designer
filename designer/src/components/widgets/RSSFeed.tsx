@@ -3,7 +3,7 @@ import RssFeedIcon from "../../assets/images/material/rss_feed.svg";
 import LanguageIcon from "../../assets/images/material/language.svg";
 import RadioIcon from "../../assets/images/material/radio.svg";
 import { css, keyframes } from "@emotion/css";
-import { RSSFeed as RSSFeedConfig } from "@hella_project/common/validation/schemaDesigner";
+import { RSSFeed as RSSFeedConfig } from "@client/schemas/schemaDesigner";
 
 // import rainy from "../../assets/images/rainy-5.svg";
 // const RssFeedIcon = ({ ...props }) => <img src={rainy} />,

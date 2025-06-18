@@ -1,5 +1,5 @@
 import React from "react";
-import { Shape } from "@hella_project/common/validation/schemaDesigner";
+import { Shape } from "@client/schemas/schemaDesigner";
 import { configToStyle } from "../../utils/styleUtils";
 
 type EllipseProps = { config: Shape };

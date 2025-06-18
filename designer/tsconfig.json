@@ -20,6 +20,10 @@
     // "sourceMap": true,
     // "outDir": "dist",
     "jsx": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@client/*": ["../client/src/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules", "src/**/*.test.tsx"]

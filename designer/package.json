@@ -17,8 +17,7 @@
   "homepage": ".",
   "scripts": {
     "start": "react-scripts start",
-    "build:dev": "cross-env REACT_APP_API_URL=https://pmeccount-dev.azurewebsites.net react-scripts build",
-    "build:prod": "react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "postbuild:dev": "cd build/ && rimraf design.json mockPmJsLib.js mockData.js && bestzip output.zip *",

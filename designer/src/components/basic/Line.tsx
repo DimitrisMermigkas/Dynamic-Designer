@@ -1,5 +1,5 @@
 import React from "react";
-import { Line as LineSchema } from "@hella_project/common/validation/schemaDesigner";
+import { Line as LineSchema } from "@client/schemas/schemaDesigner";
 
 type LineProps = { config: LineSchema };
 

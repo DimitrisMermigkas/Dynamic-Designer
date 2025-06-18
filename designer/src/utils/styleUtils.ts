@@ -1,4 +1,4 @@
-import { ObjectBase } from "@hella_project/common/validation/schemaDesigner";
+import { ObjectBase } from "@client/schemas/schemaDesigner";
 import tinycolor from "tinycolor2";
 
 export function convertColor(color?: string | null) {

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Multimedia as MultimediaType } from "@hella_project/common/validation/schemaDesigner";
+import { Multimedia as MultimediaType } from "@client/schemas/schemaDesigner";
 import { configToStyle } from "../../utils/styleUtils";
 import Playlist from "./Playlist";
 

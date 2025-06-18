@@ -1,5 +1,5 @@
 import React from "react";
-import { Embed as EmbedConfig } from "@hella_project/common/validation/schemaDesigner";
+import { Embed as EmbedConfig } from "@client/schemas/schemaDesigner";
 import { css } from "@emotion/css";
 import { baseConfigToStyle } from "../../utils/styleUtils";
 

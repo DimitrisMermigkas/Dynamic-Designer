@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Multimedia as MultimediaType } from "@hella_project/common/validation/schemaDesigner";
+import { Multimedia as MultimediaType } from "@client/schemas/schemaDesigner";
 import PlaylistController, {
   PlaylistItem,
   Playlist as PlaylistModel,

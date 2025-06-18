@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Screen } from "@hella_project/common/validation/schemaDesigner";
+import { Screen } from "@client/schemas/schemaDesigner";
 import DesignerScreen from "./DesignerScreen";
 
 type ScreensProps = {

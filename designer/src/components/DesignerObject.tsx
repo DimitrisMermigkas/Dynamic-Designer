@@ -2,7 +2,7 @@ import React from "react";
 import {
   Screen,
   ScreenObject,
-} from "@hella_project/common/validation/schemaDesigner";
+} from "@client/schemas/schemaDesigner";
 import Rectangle from "./basic/Rectangle";
 import Text from "./basic/Text";
 import Button from "./widgets/Button";

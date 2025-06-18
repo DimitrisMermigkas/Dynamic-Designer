@@ -1,5 +1,5 @@
 import React from "react";
-import { Shape } from "@hella_project/common/validation/schemaDesigner";
+import { Shape } from "@client/schemas/schemaDesigner";
 import { convertColor } from "../../utils/styleUtils";
 
 type TriangleProps = { config: Shape };

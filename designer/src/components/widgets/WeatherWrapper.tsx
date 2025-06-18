@@ -4,7 +4,7 @@ import useWeatherHandler from "./Weather.handler";
 import {
   Screen,
   Weather as WeatherConfig,
-} from "@hella_project/common/validation/schemaDesigner";
+} from "@client/schemas/schemaDesigner";
 
 const WeatherWrapper = ({
   config,

@@ -1,5 +1,5 @@
 import React from "react";
-import { QRCode as QRCodeConfig } from "@hella_project/common/validation/schemaDesigner";
+import { QRCode as QRCodeConfig } from "@client/schemas/schemaDesigner";
 import { QRCodeSVG } from "qrcode.react";
 import { configToStyle } from "../../utils/styleUtils";
 import { getDynamicDetail } from "../../utils/textUtils";

@@ -1,6 +1,6 @@
 import React from "react";
 import RSSFeed from "./RSSFeed";
-import { RSSFeed as RSSFeedConfig } from "@hella_project/common/validation/schemaDesigner";
+import { RSSFeed as RSSFeedConfig } from "@client/schemas/schemaDesigner";
 import useRSSFeedHandler from "./RSSFeed.handler";
 
 const RSSFeedWrapper = ({ config }: { config: RSSFeedConfig }) => {

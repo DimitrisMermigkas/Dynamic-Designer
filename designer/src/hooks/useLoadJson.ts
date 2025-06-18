@@ -1,7 +1,7 @@
 import {
   Design,
   DesignerSchema,
-} from "@hella_project/common/validation/schemaDesigner";
+} from "@client/schemas/schemaDesigner";
 
 export default function useLoadJson() {
   let json: Design["Configuration"] | null = null;

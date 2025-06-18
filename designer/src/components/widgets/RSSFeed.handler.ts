@@ -1,5 +1,5 @@
 import useFetch from "../../hooks/useFetch";
-import { RSSFeed as RSSFeedConfig } from "@hella_project/common/validation/schemaDesigner";
+import { RSSFeed as RSSFeedConfig } from "@client/schemas/schemaDesigner";
 
 // const link = "https://feeds.bbci.co.uk/news/world/rss.xml";
 // const link = "https://www.theguardian.com/uk/rss";

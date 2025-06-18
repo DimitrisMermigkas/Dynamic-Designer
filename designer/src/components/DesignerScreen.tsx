@@ -1,5 +1,5 @@
 import React from "react";
-import { Screen } from "@hella_project/common/validation/schemaDesigner";
+import { Screen } from "@client/schemas/schemaDesigner";
 import DesignerObject from "./DesignerObject";
 import useWindowSize from "../hooks/useWindowSize";
 

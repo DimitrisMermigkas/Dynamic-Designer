@@ -1,5 +1,5 @@
 import React from "react";
-import { ButtonObject } from "@hella_project/common/validation/schemaDesigner";
+import { ButtonObject } from "@client/schemas/schemaDesigner";
 import { baseConfigToStyle, convertColor } from "../../utils/styleUtils";
 
 export const ButtonSettings = {

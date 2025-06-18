@@ -1,6 +1,6 @@
 import React from "react";
 import useLoadJson from "./hooks/useLoadJson";
-import { Screen } from "@hella_project/common/validation/schemaDesigner";
+import { Screen } from "@client/schemas/schemaDesigner";
 import Screens from "./components/Screens";
 
 function App() {

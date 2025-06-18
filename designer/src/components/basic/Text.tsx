@@ -2,7 +2,7 @@ import React from "react";
 import {
   InnerTextStyle,
   Textbox,
-} from "@hella_project/common/validation/schemaDesigner";
+} from "@client/schemas/schemaDesigner";
 import { configToStyle } from "../../utils/styleUtils";
 import { getDynamicDetail } from "../../utils/textUtils";
 

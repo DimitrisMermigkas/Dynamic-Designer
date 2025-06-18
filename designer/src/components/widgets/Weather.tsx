@@ -5,7 +5,7 @@ import cloudy from "../../assets/images/weather/cloudy.svg";
 import rainy from "../../assets/images/weather/rainy-5.svg";
 import snowy from "../../assets/images/weather/snowy-6.svg";
 import { css } from "@emotion/css";
-import { Weather as WeatherConfig } from "@hella_project/common/validation/schemaDesigner";
+import { Weather as WeatherConfig } from "@client/schemas/schemaDesigner";
 import { baseConfigToStyle } from "../../utils/styleUtils";
 
 type Mode = "vertical" | "horizontal" | "minimized";
