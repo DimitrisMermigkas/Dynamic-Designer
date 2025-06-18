@@ -27,7 +27,8 @@
     "buildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs",
     "buildPackage:obfuscated": "rimraf dist && rollup -c --bundleConfigAsCjs && npm run obfuscatePackage",
     "obfuscatePackage": "javascript-obfuscator ./dist/cjs/index.js --output ./dist/cjs/index.js --config obfuscator.config.js && javascript-obfuscator ./dist/esm/index.js --output ./dist/esm/index.js --config obfuscator.config.js",
-    "watchBuildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs --watch"
+    "watchBuildPackage": "rimraf dist && rollup -c --bundleConfigAsCjs --watch",
+    "build:prod": "npm run buildPackage:obfuscated"
   },
   "dependencies": {
     "@emotion/css": "^11.11.2",
