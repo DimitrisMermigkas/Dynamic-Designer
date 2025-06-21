@@ -54,7 +54,7 @@
     "start": "react-scripts start",
     "obfuscate": "javascript-obfuscator ./build/static/js --output ./build/static/js --config obfuscator.config.js",
     "build": "cd ../designer && npm run buildPackage && cd ../client && react-scripts build",
-    "build:prod": "react-scripts build",
+    "build:prod": "cd ../designer && npm run buildPackage && cd ../client && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
