@@ -19,6 +19,7 @@
     "clsx": "^2.0.0",
     "color": "^4.2.3",
     "cron-converter": "^2.1.0",
+    "cross-env": "^7.0.3",
     "deepcopy": "^2.1.0",
     "fabric": "^5.4.0",
     "fabricjs-react": "^1.2.0",
@@ -53,9 +54,11 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "obfuscate": "javascript-obfuscator ./build/static/js --output ./build/static/js --config obfuscator.config.js && rimraf ./build/static/js/*.map",
-    "build": "cd ../designer && npm run buildPackage && cd ../client && GENERATE_SOURCEMAP=false react-scripts build",
-    "build:prod": "cd ../designer && npm run buildPackage && cd ../client && GENERATE_SOURCEMAP=false react-scripts build && npm run obfuscate",
+    "obfuscate": "node obfuscate.js",
+    "build": "cd ../designer && npm run buildPackage && cd ../client && cross-env GENERATE_SOURCEMAP=false react-scripts build",
+    "build:prod": "cd ../designer && npm run buildPackage && cd ../client && cross-env GENERATE_SOURCEMAP=false react-scripts build && npm run obfuscate",
+    "build:prod:no-obfuscate": "cd ../designer && npm run buildPackage && cd ../client && cross-env GENERATE_SOURCEMAP=false react-scripts build",
+    "build:simple": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
