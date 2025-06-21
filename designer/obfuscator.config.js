@@ -4,8 +4,8 @@ module.exports = {
   controlFlowFlatteningThreshold: 0.75,
   deadCodeInjection: true,
   deadCodeInjectionThreshold: 0.4,
-  debugProtection: false,
-  debugProtectionInterval: 0,
+  debugProtection: true,
+  debugProtectionInterval: 2000,
   disableConsoleOutput: true,
   identifierNamesGenerator: 'hexadecimal',
   log: false,
@@ -19,5 +19,7 @@ module.exports = {
   stringArrayEncoding: ['base64'],
   stringArrayThreshold: 0.75,
   transformObjectKeys: true,
-  unicodeEscapeSequence: false
+  unicodeEscapeSequence: false,
+  sourceMap: false,
+  sourceMapMode: 'none'
 }; 
