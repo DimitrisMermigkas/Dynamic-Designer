@@ -40,6 +40,7 @@ declare module "@mui/material/styles" {
       width: number;
       color: string;
     };
+    applyStyles?: (mode: "light" | "dark", styles: any) => any;
   }
 
   interface ThemeOptions {

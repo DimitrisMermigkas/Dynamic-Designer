@@ -114,7 +114,7 @@ const ConfirmDialog = ({
             }}
             onClick={okFunc}
           >
-            {okBtnTxt || t("GeneralTranslations.t.ok")}
+            {okBtnTxt || t("DesignerTranslations.t.ok")}
           </Button>
         )}
         {cancelFunc && (
@@ -127,7 +127,7 @@ const ConfirmDialog = ({
             }}
             onClick={cancelFunc}
           >
-            {cancelBtnTxt || t("GeneralTranslations.t.cancel")}
+            {cancelBtnTxt || t("DesignerTranslations.t.cancel")}
           </Button>
         )}
       </DialogActions>

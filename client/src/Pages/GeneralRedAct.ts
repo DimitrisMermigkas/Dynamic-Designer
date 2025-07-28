@@ -7,11 +7,13 @@ const reducerName = "generalReducer";
 type GeneralReducerState = {
   unsavedChangesByID: { [key: string]: boolean };
   selectedTheme: "light" | "dark";
+  language: "en" | "el";
 };
 
 const INITIAL_STATE: GeneralReducerState = {
   unsavedChangesByID: {},
   selectedTheme: "dark",
+  language: "en",
 };
 
 const slice = createSlice({
@@ -46,6 +48,12 @@ const slice = createSlice({
       return {
         ...state,
         selectedTheme: payload,
+      };
+    },
+    setLanguage: (state, { payload }: PayloadAction<"en" | "el">) => {
+      return {
+        ...state,
+        language: payload,
       };
     },
   },

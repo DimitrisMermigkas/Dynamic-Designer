@@ -13,6 +13,7 @@ const translations = {
   clear: { en: "Clear", el: "Καθαρισμός" },
   save: { en: "Save", el: "Αποθήκευση" },
   add: { en: "Add", el: "Προσθήκη" },
+  custom: { en: "Custom", el: "Προσαρμοσμένο" },
   name: { en: "Name", el: "Όνομα" },
   tryMe: { en: "Try Me", el: "Δοκιμή" },
   settings: { en: "Settings", el: "Ρυθμίσεις" },

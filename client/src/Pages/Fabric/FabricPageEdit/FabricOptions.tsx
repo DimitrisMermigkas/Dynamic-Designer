@@ -67,7 +67,7 @@ const useStyles = makeStyles()((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
-    top: "50px ",
+    top: "46px ",
   },
   drawerClose: {
     transition: theme.transitions.create("width", {
@@ -75,7 +75,7 @@ const useStyles = makeStyles()((theme) => ({
       duration: theme.transitions.duration.leavingScreen,
     }),
     overflowX: "hidden",
-    top: "50px ",
+    top: "46px ",
   },
   firstChild: {
     display: "flex",

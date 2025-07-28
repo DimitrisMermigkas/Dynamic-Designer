@@ -95,7 +95,7 @@ const SaveRefreshFixedPositionFunc = ({
             onClick={disableRefresh ? null : onRefresh}
             variant="outlined"
           >
-            {onRefreshTxt || t("GeneralTranslations.t.refresh")}
+            {onRefreshTxt || t("DesignerTranslations.t.refresh")}
           </Button>
         )}
         {onSave && (
@@ -105,7 +105,7 @@ const SaveRefreshFixedPositionFunc = ({
             variant="contained"
             disabled={disableSave}
           >
-            {onSaveTxt || t("GeneralTranslations.t.save")}
+            {onSaveTxt || t("DesignerTranslations.t.save")}
           </Button>
         )}
       </ButtonsContainer>

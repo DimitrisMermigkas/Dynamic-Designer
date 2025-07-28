@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
     (state: any) => state.fabricPageReducer.MsgShownToday
   );
   const carouselImages = [design_1, design_2, design_3, design_4];
-
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const pagination = {
     clickable: true,
     renderBullet: function (index, className) {
@@ -86,7 +86,7 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
         sx={{
           "& .MuiDialog-paper": {
             width: "90%",
-            height: "90%",
+            height: "fit-content",
             maxWidth: "none",
             maxHeight: "none",
             margin: 0,
@@ -187,7 +187,6 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                         display: "grid",
                         gridTemplateColumns: "repeat(2, 1fr)",
                         gap: 2,
-                        mb: 4,
                       }}
                     >
                       {carouselImages.map((img, idx) => (
@@ -198,6 +197,11 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                             justifyContent: "center",
                             alignItems: "center",
                             p: 1,
+                            cursor: "pointer",
+                            "&:hover": {
+                              transform: "scale(2.1)",
+                              transition: "transform 0.3s ease",
+                            },
                           }}
                         >
                           <img
@@ -227,6 +231,9 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                     background: "rgba(255, 255, 255, 0.05)",
                     backdropFilter: "blur(10px)",
                     boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
                   }}
                 >
                   <Typography variant="h5" gutterBottom color="primary">
@@ -236,7 +243,7 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                     To begin creating your dynamic content:
                   </Typography>
 
-                  <Box sx={{ width: "100%", height: "300px", mb: 3 }}>
+                  <Box sx={{ width: "100%", height: "300px" }}>
                     <Swiper
                       slidesPerView={1}
                       loop={true}
@@ -250,7 +257,7 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                       className="mySwiper"
                     >
                       <SwiperSlide>
-                        <Box sx={{ textAlign: "center", p: 2 }}>
+                        <Box sx={{ textAlign: "center" }}>
                           <Typography variant="h6" color="primary" gutterBottom>
                             1. Click and place media elements from the library
                           </Typography>
@@ -323,7 +330,6 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      mt: 2,
                       p: 2,
                       backgroundColor: "rgba(255, 193, 7, 0.1)",
                       borderRadius: 1,
@@ -342,7 +348,6 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      mt: 2,
                       p: 2,
                       backgroundColor: "rgba(76, 175, 80, 0.1)",
                       borderRadius: 1,
@@ -433,6 +438,25 @@ const WelcomeDialog: React.FC<WelcomeDialogProps> = ({
               Let's Get Started
             </Button>
           </Box>
+        </DialogContent>
+      </Dialog>
+      {/* Fullscreen Picture Dialog */}
+      <Dialog
+        open={open && shouldShowDialog()}
+        onClose={handleClose}
+        maxWidth={false}
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            width: "90%",
+            height: "fit-content",
+            maxWidth: "none",
+            maxHeight: "none",
+          },
+        }}
+      >
+        <DialogContent>
+          <img src={selectedImage} alt="Fullscreen Picture" />
         </DialogContent>
       </Dialog>
     </Backdrop>

@@ -1,10 +1,10 @@
 import React from "react";
 import { GlobalStyles as MuiGlobalStyles } from "@mui/material";
-import { createTheme, useTheme } from "@mui/material/styles";
+import { createTheme, ThemeOptions, useTheme } from "@mui/material/styles";
 import themeDefault from "../theme-default";
 
 const GlobalStyles = () => {
-  const theme = createTheme(themeDefault("dark", "ltr"));
+  const theme = createTheme(themeDefault("dark", "ltr") as ThemeOptions);
   return (
     <MuiGlobalStyles
       styles={{
@@ -13,7 +13,6 @@ const GlobalStyles = () => {
         },
         body: {
           overflow: "hidden",
-          background: `${theme.palette.background.defaultDarkest} !important`,
           position: "fixed",
           width: "100%",
         },

@@ -24,6 +24,7 @@
     "fabric": "^5.4.0",
     "fabricjs-react": "^1.2.0",
     "fast-equals": "^5.2.2",
+    "flag-icons": "^7.5.0",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "javascript-obfuscator": "^4.1.1",

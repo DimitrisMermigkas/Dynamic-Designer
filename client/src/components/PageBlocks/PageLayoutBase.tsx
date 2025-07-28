@@ -1,9 +1,13 @@
+import { Theme, useTheme } from "@mui/material";
 import React from "react";
 import styled from "styled-components";
 
 const titleHeight = 72;
 
-const PageContentDiv = styled.div<{ $hasPaddingTop?: boolean }>`
+const PageContentDiv = styled.div<{
+  $hasPaddingTop?: boolean;
+  $theme: Theme;
+}>`
   height: ${({ $hasPaddingTop }) =>
     $hasPaddingTop ? "100%" : `calc(100% - ${titleHeight}px)`};
   padding: 40px;
@@ -11,6 +15,7 @@ const PageContentDiv = styled.div<{ $hasPaddingTop?: boolean }>`
   overflow: auto;
   display: flex;
   box-sizing: border-box;
+  background: ${({ $theme }) => $theme.palette.background.defaultDarkest};
 `;
 
 type PageLayoutBaseProps = {
@@ -26,9 +31,14 @@ const PageLayoutBase = ({
   children,
   style,
 }: PageLayoutBaseProps) => {
+  const theme = useTheme();
   return (
     <>
-      <PageContentDiv style={style} $hasPaddingTop={!(title || toolbarContent)}>
+      <PageContentDiv
+        style={style}
+        $hasPaddingTop={!(title || toolbarContent)}
+        $theme={theme}
+      >
         {children}
       </PageContentDiv>
     </>

@@ -171,7 +171,7 @@ const CanvasAccordion = ({
       >
         <div style={{ display: "flex" }}>
           <CustomTextField
-            label={t("GeneralTranslations.t.name")}
+            label={t("DesignerTranslations.t.name")}
             value={canvasName}
             hasBorder={true}
             onChange={(e) =>
@@ -224,7 +224,7 @@ const CanvasAccordion = ({
             ))}
             {isCustom && (
               <MenuItem value="custom">
-                {t("GeneralTranslations.t.custom")}
+                {t("DesignerTranslations.t.custom")}
               </MenuItem>
             )}
           </SelectOutlined>

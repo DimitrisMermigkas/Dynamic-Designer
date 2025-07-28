@@ -42,7 +42,7 @@ const ItemMenu = ({
       }
     >
       <MenuItem onClick={() => itemMenuClick("delete")}>
-        {t("GeneralTranslations.t.delete")}
+        {t("DesignerTranslations.t.delete")}
       </MenuItem>
       <MenuItem onClick={() => itemMenuClick("sendToBack")}>
         {t("DesignerTranslations.t.sendToBack")}
@@ -80,7 +80,7 @@ const ItemMenu = ({
         onClick={handleMouseEnter}
         style={{ height: "fit-content", minWidth: "90px" }}
       >
-        <ListItemText primary={t("GeneralTranslations.t.add")} />
+        <ListItemText primary={t("DesignerTranslations.t.add")} />
         <ListItemIcon style={{ minWidth: "unset" }}>
           <KeyboardArrowRightIcon />
         </ListItemIcon>

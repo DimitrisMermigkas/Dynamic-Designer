@@ -354,7 +354,7 @@ const lightTheme: ThemeOptions = _.merge(deepcopy(baseTheme), {
       gridColor: "#D5D5D5",
       primaryDrawer: "#282A2F",
       popover: "#FFFFFF",
-      defaultDarkest: "#F2F4F8",
+      defaultDarkest: "#E8ECF3",
       tabSelected:
         "linear-gradient(94.39deg, #E8F0F7 14.65%, rgba(255, 255, 255, 0) 164.2%)",
     },
@@ -445,7 +445,14 @@ const themeDefault = (type: "dark" | "light", direction: Direction) => {
   type = type || "dark";
   const chosenTheme = type === "light" ? lightTheme : darkTheme;
   chosenTheme.direction = direction;
-  return createTheme(chosenTheme);
+
+  // Add applyStyles method to the theme
+  const theme = createTheme(chosenTheme);
+  theme.applyStyles = (mode: "light" | "dark", styles: any) => {
+    return mode === type ? styles : {};
+  };
+
+  return theme;
 };
 
 export { darkTheme, lightTheme };

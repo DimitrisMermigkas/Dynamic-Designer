@@ -32,7 +32,7 @@ const translate = (key: string, language: Language = "en"): string => {
 
 // Custom hook for translations
 export const useTranslation = () => {
-  const language = useSelector((state: any) => state.language) as Language;
+  const language = useSelector((state: any) => state.generalReducer.language) as Language;
 
   return {
     t: (key: string) => translate(key, language),

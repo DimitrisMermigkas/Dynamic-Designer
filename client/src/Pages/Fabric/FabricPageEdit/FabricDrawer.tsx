@@ -41,7 +41,7 @@ const useStyles = makeStyles()({
   button: {
     padding: "5px",
   },
-  paperAnchorLeft: { height: "calc(100% - 50px)", top: "50px" },
+  paperAnchorLeft: { height: "calc(100% - 46px)", top: "46px" },
 });
 
 const FabricDrawer = ({

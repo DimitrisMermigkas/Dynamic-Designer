@@ -13,8 +13,8 @@ const useStyles = makeStyles()((theme) => ({
   },
   anchorLeft: {
     left: "unset",
-    top: "50px",
-    height: "calc(100% - 50px)",
+    top: "46px",
+    height: "calc(100% - 46px)",
     overflow: "hidden",
   },
 }));
