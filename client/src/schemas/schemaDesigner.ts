@@ -31,6 +31,7 @@ const InnerTextStyleSchema = z.object({
   color: z.string().optional(),
   fontStyle: z.enum(["normal", "italic"]).optional(),
   fontWeight: z.enum(["normal", "bold"]).optional(),
+  fontSize: z.number().min(14).max(1000).optional(),
   underline: z.boolean().optional(),
   stroke: z.string().nullable().optional(),
   strokeWidth: z.number().nullable().optional(),
@@ -126,6 +127,7 @@ export const WeatherSchema = ObjectBaseSchema.extend({
   settings: z
     .object({
       backgroundColor: z.string().optional(),
+      textColor: z.string().optional(),
       borderColor: z.string().optional(),
       borderWidth: z.number().int().min(0).optional(),
       borderRadius: z.number().int().min(0).optional(),
@@ -173,6 +175,7 @@ export const QRCodeSchema = ObjectBaseSchema.extend({
     currentWidth: z.number().optional(), //TODO remove
     typeText: z.enum(["dynamic", "static"]).optional(),
     backgroundColor: z.string().optional(),
+    foregroundColor: z.string().optional(),
     borderColor: z.string().nullable().optional(),
     borderWidth: z.number().nullable().optional(),
   }),

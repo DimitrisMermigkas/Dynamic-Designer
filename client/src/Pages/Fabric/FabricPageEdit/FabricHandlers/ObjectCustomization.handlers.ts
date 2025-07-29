@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fabric } from "fabric";
 import { fabricPageActions } from "../../FabricPageRedAct";
 import { multiMediaObjectFit } from "../FabricComponents/MultimediaHelper";
@@ -27,6 +27,7 @@ const useObjectCustomizationHandlers = ({
   const [canvasBgColor, setCanvasBgColor] = useState("");
 
   const [toggleBtnGroupFont, setToggleBtnGroupFont] = useState({
+    fontSize: 32,
     bold: false,
     italic: false,
     underline: false,
@@ -42,6 +43,7 @@ const useObjectCustomizationHandlers = ({
     fillAlpha: parseInt(selectedObject?.fill?.slice(-2), 16),
     strokeAlpha: parseInt(selectedObject?.stroke?.slice(-2), 16),
   });
+  const lastSelectedObject = useRef(selectedObject);
 
   const convertPxToPercentage = (
     modifiedObj,
@@ -101,6 +103,18 @@ const useObjectCustomizationHandlers = ({
       let allBold = true;
       let allItalic = true;
       let allUnderline = true;
+      let allFontSize = true;
+      const fontSizesSet = new Set();
+
+      for (let i = start; i < end; i++) {
+        const charStyle = activeObj.getSelectionStyles(i, i + 1)[0];
+        if (charStyle && charStyle.fontSize) {
+          fontSizesSet.add(charStyle.fontSize);
+        }
+      }
+      if (fontSizesSet.size > 1) {
+        allFontSize = false;
+      }
 
       for (let i = start; i < end; i++) {
         const charStyle = activeObj.getSelectionStyles(i, i + 1)[0];
@@ -125,17 +139,20 @@ const useObjectCustomizationHandlers = ({
         isAllBold: allBold,
         isAllItalic: allItalic,
         isAllUnderline: allUnderline,
+        isAllFontSize:
+          fontSizesSet.size > 1 ? "" : fontSizesSet.values().next().value,
       };
     }
     return {
       isAllBold: false,
       isAllItalic: false,
       isAllUnderline: false,
+      isAllFontSize: "",
     };
   };
 
   const checkLastCharacterStyle = (activeObj, start) => {
-    let cursorPos = start == 0 ? 0 : start - 1;
+    let cursorPos = start === 0 ? 0 : start - 1;
 
     let cumulativeLength = 0;
     let line;
@@ -150,19 +167,27 @@ const useObjectCustomizationHandlers = ({
       cumulativeLength += textLines[j].length + 1;
     }
 
-    let fontWeight, fontStyle, underline;
+    let fontWeight, fontStyle, underline, fontSize;
     if (activeObj?.styles[line]) {
       if (Array.isArray(activeObj.styles)) {
         fontWeight = activeObj?.styles[line][cursorPos]?.fontWeight;
         fontStyle = activeObj?.styles[line][cursorPos]?.fontStyle;
         underline = activeObj?.styles[line][cursorPos]?.underline;
+        fontSize =
+          activeObj?.styles[line][cursorPos]?.fontSize ||
+          activeObj?.fontSize ||
+          32;
       } else if (
-        typeof activeObj.styles == "object" &&
+        typeof activeObj.styles === "object" &&
         Object.keys(activeObj.styles).length > 0
       ) {
         fontWeight = activeObj?.styles[line][cursorPos]?.fontWeight;
         fontStyle = activeObj?.styles[line][cursorPos]?.fontStyle;
         underline = activeObj?.styles[line][cursorPos]?.underline;
+        fontSize =
+          activeObj?.styles[line][cursorPos]?.fontSize ||
+          activeObj?.fontSize ||
+          32;
       }
     } else {
       fontWeight = "normal";
@@ -170,17 +195,18 @@ const useObjectCustomizationHandlers = ({
       underline = false;
     }
 
-    let isBold = fontWeight == "bold";
-    let isItalic = fontStyle == "italic";
+    let isBold = fontWeight === "bold";
+    let isItalic = fontStyle === "italic";
     let isUnderline = underline;
-    if (!isBold && activeObj.fontWeight == "bold") isBold = true;
-    if (!isItalic && activeObj.fontStyle == "italic") isItalic = true;
+    if (!isBold && activeObj.fontWeight === "bold") isBold = true;
+    if (!isItalic && activeObj.fontStyle === "italic") isItalic = true;
     if (!isUnderline && activeObj.underline) isItalic = true;
 
     return {
       isAllBold: isBold,
       isAllItalic: isItalic,
       isAllUnderline: isUnderline,
+      isAllFontSize: fontSize,
     };
   };
   const setToggleBtnGroupFontFunction = (activeObj, wholeText) => {
@@ -188,10 +214,15 @@ const useObjectCustomizationHandlers = ({
     const selectionEnd = selectedObject.selectionEnd;
     const textLength = activeObj.text.length;
     const start = wholeText ? 0 : selectionStart;
-    const end = wholeText ? textLength : selectionEnd;
+    const end = wholeText
+      ? textLength
+      : activeObj.isEditing
+      ? selectionEnd
+      : textLength;
+    const isEditing = activeObj.isEditing;
 
-    const { isAllBold, isAllItalic, isAllUnderline } =
-      selectionStart === selectionEnd
+    const { isAllBold, isAllItalic, isAllUnderline, isAllFontSize } =
+      selectionStart === selectionEnd && isEditing
         ? checkLastCharacterStyle(activeObj, start)
         : checkAllCharactersStyles(activeObj, start, end);
 
@@ -200,18 +231,10 @@ const useObjectCustomizationHandlers = ({
       bold: isAllBold,
       italic: isAllItalic,
       underline: isAllUnderline,
+      fontSize: isAllFontSize,
     });
   };
-  useEffect(() => {
-    if (canvas) {
-      // Force a re-render by using a small timeout
-      setTimeout(() => {
-        setCanvasBgColor(canvas.backgroundColor);
-      }, 0);
-    }
-  }, [canvas?.backgroundColor]);
 
-  // Add a separate effect to handle initial background color
   useEffect(() => {
     if (canvas) {
       setCanvasBgColor(canvas.backgroundColor);
@@ -219,9 +242,19 @@ const useObjectCustomizationHandlers = ({
   }, [canvas]);
 
   useEffect(() => {
+    if (
+      lastSelectedObject.current &&
+      lastSelectedObject.current.type === "IText" &&
+      lastSelectedObject.current.id !== selectedObject?.id
+    ) {
+      if (typeof lastSelectedObject.current.set === "function") {
+        lastSelectedObject.current.set("name", lastSelectedObject.current.text);
+      }
+    }
     if (selectedObject) {
+      lastSelectedObject.current = selectedObject;
       setAngle(selectedObject.angle);
-      if (selectedObject.type == "QRCode") {
+      if (selectedObject.type === "QRCode") {
         const rect = selectedObject._objects[0];
         setObjectColor({
           fill: rect.fill,
@@ -240,9 +273,9 @@ const useObjectCustomizationHandlers = ({
         });
       }
       setObjectName(selectedObject.name);
-      if (selectedObject.type == "Multimedia" && selectedObject.path !== "") {
+      if (selectedObject.type === "Multimedia" && selectedObject.path !== "") {
         const activeObj = canvas.getActiveObject();
-        if (activeObj?.id == selectedObject.id) {
+        if (activeObj?.id === selectedObject.id) {
           const objects = activeObj.getObjects();
           if (objects.length > 1) {
             setAspectRatio(objects[1].objectFit);
@@ -259,7 +292,7 @@ const useObjectCustomizationHandlers = ({
       }
       const activeObj = canvas.getActiveObject();
 
-      if (activeObj && activeObj.type == "IText") {
+      if (activeObj && activeObj.type === "IText") {
         setToggleBtnGroupFontFunction(activeObj, true);
         activeObj.on("selection:changed", (e) => {
           setToggleBtnGroupFontFunction(activeObj, false);
@@ -299,7 +332,7 @@ const useObjectCustomizationHandlers = ({
           left: 0,
           top: 0,
         });
-        if (objects.length > 1 && media.getElement().localName == "img") {
+        if (objects.length > 1 && media.getElement().localName === "img") {
           multiMediaObjectFit(canvas, backgroundRect, media, media.objectFit);
         }
       } else {
@@ -352,28 +385,15 @@ const useObjectCustomizationHandlers = ({
     canvas.renderAll();
   };
 
-  const setShadow = (option) => {
-    const activeObject = canvas.getActiveObject();
-    if (!activeObject) {
-      return;
-    }
-    activeObject.set("shadow", new fabric.Shadow(option));
-    canvas.requestRenderAll();
-    // const { onModified } = this;
-    // if (onModified) {
-    //   onModified(activeObject);
-    // }
-  };
-
   const getActiveObject = () => {
     const activeObj = canvas.getActiveObject();
     if (activeObj && !activeObj?.isPoint) return activeObj;
     else {
       const objects = canvas.getObjects();
       const anyCircle = objects.find(
-        (obj) => obj.type == "circle" || obj.isPoint
+        (obj) => obj.type === "circle" || obj.isPoint
       );
-      const line = objects.find((obj) => obj.id == anyCircle?.referenceId);
+      const line = objects.find((obj) => obj.id === anyCircle?.referenceId);
       return line;
     }
   };
@@ -399,9 +419,21 @@ const useObjectCustomizationHandlers = ({
     const width = activeObj.width;
     const height = activeObj.height;
     if (activeObj && activeObj.type === "IText") {
-      activeObj.set({
-        fontSize: scaledFontSize,
-      }); // Update the IText object with the new dimensions
+      if (!activeObj.isEditing) {
+        activeObj.setSelectionStyles(
+          { fontSize: scaledFontSize },
+          0,
+          activeObj.text.length
+        ); // Update the IText object's whole text with the new fontSize
+      } else {
+        const selectionStart = activeObj.selectionStart;
+        const selectionEnd = activeObj.selectionEnd;
+        activeObj.setSelectionStyles(
+          { fontSize: scaledFontSize },
+          selectionStart,
+          selectionEnd
+        );
+      }
       setSelectedObject((prevObj) => {
         let updatedObj = { fontSize: scaledFontSize, ...prevObj };
         return updatedObj;
@@ -445,26 +477,33 @@ const useObjectCustomizationHandlers = ({
       canvas.renderAll();
     }
   };
-  const removeStyle = (activeObject, styleProperty) => {
-    const styles = activeObject.styles[0];
-    for (const key in styles) {
-      if (Object.prototype.hasOwnProperty.call(styles, key)) {
-        const style = styles[key];
-        if (style[styleProperty]) {
-          delete style[styleProperty];
-        }
-      }
-    }
-    return activeObject;
-  };
 
   const setTextStyle = (style, value) => {
     const activeObj = canvas.getActiveObject();
     if (activeObj && activeObj.type === "IText") {
       const selectionStart = activeObj.selectionStart;
       const selectionEnd = activeObj.selectionEnd;
-      const styleObject = { [style]: value };
+      let styleObject = { [style]: value };
+      //Need to calculate scaled font
+      if (style === "fontSize") {
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
 
+        const widthRatio =
+          selectedDesign.Configuration.screens[screenIndex].resolution.width /
+          canvasWidth;
+        const heightRatio =
+          selectedDesign.Configuration.screens[screenIndex].resolution.height /
+          canvasHeight;
+
+        // Use the average of width and height ratios to maintain aspect ratio
+        const averageRatio =
+          Math.min(widthRatio, heightRatio) * canvas.viewportZoom;
+
+        // Calculate scaled font size
+        const scaledFontSize = value / averageRatio;
+        styleObject = { [style]: scaledFontSize };
+      }
       if (!activeObj.isEditing) {
         // Apply styles from start to end of the whole text
         activeObj.setSelectionStyles(styleObject, 0, activeObj.text.length);
@@ -493,8 +532,8 @@ const useObjectCustomizationHandlers = ({
     const activeObj = canvas.getActiveObject();
     if (activeObj.type !== "IText") {
       if (
-        (activeObj.type == "Multimedia" && activeObj.path !== "") ||
-        activeObj.type == "QRCode"
+        (activeObj.type === "Multimedia" && activeObj.path !== "") ||
+        activeObj.type === "QRCode"
       ) {
         const backgroundRect = activeObj.getObjects()[0];
         backgroundRect.set("fill", color);
@@ -531,7 +570,7 @@ const useObjectCustomizationHandlers = ({
   const setColorOpacity = (colorArea) => (event, value) => {
     // Convert the slider value to the alpha channel (0 to 255)
     const alpha = Math.round((value / 100) * 255);
-    const alphaArea = colorArea == "fill" ? "fillAlpha" : "strokeAlpha";
+    const alphaArea = colorArea === "fill" ? "fillAlpha" : "strokeAlpha";
 
     // Update the alpha channel in the RGBA hex color
     const updatedRgbaColor =
@@ -539,8 +578,8 @@ const useObjectCustomizationHandlers = ({
       alpha.toString(16).padStart(2, "0");
     const activeObj = getActiveObject();
     if (
-      (activeObj.type == "Multimedia" && activeObj.settings.path !== "") ||
-      activeObj.superType == "customObject"
+      (activeObj.type === "Multimedia" && activeObj.settings.path !== "") ||
+      activeObj.superType === "customObject"
     ) {
       const multimediaColor =
         selectedObject._objects[0][colorArea].slice(0, -2) +
@@ -550,7 +589,7 @@ const useObjectCustomizationHandlers = ({
       backgroundRect.set(colorArea, multimediaColor);
       canvas.renderAll();
     } else {
-      if (activeObj.type == "IText" && activeObj.isEditing) {
+      if (activeObj.type === "IText" && activeObj.isEditing) {
         const startIdx = activeObj.selectionStart;
         const endIdx = activeObj.selectionEnd;
         activeObj.setSelectionStyles(
@@ -571,16 +610,16 @@ const useObjectCustomizationHandlers = ({
     const activeObj = getActiveObject();
     if (activeObj.type !== "IText") {
       if (
-        (activeObj.type == "Multimedia" && activeObj.settings.path !== "") ||
-        activeObj.superType == "customObject"
+        (activeObj.type === "Multimedia" && activeObj.settings.path !== "") ||
+        activeObj.superType === "customObject"
       ) {
         const backgroundRect = activeObj.getObjects()[0];
         backgroundRect.set("stroke", color);
         canvas.renderAll();
-      } else if (activeObj.type == "circle" && activeObj.isPoint) {
+      } else if (activeObj.type === "circle" && activeObj.isPoint) {
         const line = canvas
           .getObjects()
-          .find((o) => o.id == activeObj.referenceId && o.type == "Line");
+          .find((o) => o.id === activeObj.referenceId && o.type === "Line");
         line.set("stroke", color);
         canvas.renderAll();
       } else {
@@ -627,16 +666,16 @@ const useObjectCustomizationHandlers = ({
     const activeObj = getActiveObject();
     if (activeObj.type !== "IText") {
       if (
-        (activeObj.type == "Multimedia" && activeObj.path !== "") ||
-        activeObj.superType == "customObject"
+        (activeObj.type === "Multimedia" && activeObj.path !== "") ||
+        activeObj.superType === "customObject"
       ) {
         const backgroundRect = activeObj.getObjects()[0];
         backgroundRect.set("strokeWidth", parsedWidth);
         canvas.renderAll();
-      } else if (activeObj.type == "circle" && activeObj.isPoint) {
+      } else if (activeObj.type === "circle" && activeObj.isPoint) {
         const line = canvas
           .getObjects()
-          .find((o) => o.id == activeObj.referenceId && o.type == "Line");
+          .find((o) => o.id === activeObj.referenceId && o.type === "Line");
         line.set("strokeWidth", parsedWidth);
         canvas.renderAll();
       } else {
@@ -677,19 +716,19 @@ const useObjectCustomizationHandlers = ({
     let obj = getActiveObject();
     if (
       obj &&
-      (obj.id == "pointer-1" || obj.id == "pointer-2") &&
+      ((obj && obj.id === "pointer-1") || (obj && obj.id === "pointer-2")) &&
       obj.isPoint
     ) {
       const line = canvas
         .getObjects()
-        .find((o) => o.id == obj.referenceId && o.type == "Line");
+        .find((o) => o.id === obj.referenceId && o.type === "Line");
       obj = line;
     }
     // let value;
-    // if (key == "left") value = objectLeft;
-    // else if (key == "width") value = objectWidth;
-    // else if (key == "height") value = objectHeight;
-    // else if (key == "top") value = objectTop;
+    // if (key === "left") value = objectLeft;
+    // else if (key === "width") value = objectWidth;
+    // else if (key === "height") value = objectHeight;
+    // else if (key === "top") value = objectTop;
 
     if (obj) {
       let updatedValue = value;
@@ -717,16 +756,16 @@ const useObjectCustomizationHandlers = ({
 
         obj.setCoords();
         //tsekarisma sto Line na enhmerwnontai kai ta circle points
-        if (obj.type == "Line") {
+        if (obj.type === "Line") {
           let centerX = obj.getCenterPoint().x;
           let centerY = obj.getCenterPoint().y;
 
           let offset = obj.calcLinePoints();
           const linepoints = canvas
             .getObjects()
-            .filter((o) => o.type == "circle" && o.isPoint);
+            .filter((o) => o.type === "circle" && o.isPoint);
           linepoints.forEach((point) => {
-            if (point.id == "pointer-1") {
+            if (point.id === "pointer-1") {
               point.set({
                 left: centerX + offset.x1,
                 top: centerY + offset.y1,
@@ -740,7 +779,7 @@ const useObjectCustomizationHandlers = ({
           });
         }
         canvas.renderAll();
-        if (obj.type == "Multimedia") {
+        if (obj.type === "Multimedia") {
           canvas.fire("object:scaling", { target: obj, action: "noLines" });
           canvas.fire("object:modified", { target: obj, action: "scale" });
         } else {
@@ -765,12 +804,12 @@ const useObjectCustomizationHandlers = ({
         height: Math.round(modifiedObject.height),
       });
       if (
-        modifiedObject.id == "pointer-1" ||
-        modifiedObject.id == "pointer-2"
+        modifiedObject.id === "pointer-1" ||
+        modifiedObject.id === "pointer-2"
       ) {
         const line = canvas
           .getObjects()
-          .find((o) => o.id == modifiedObject.referenceId);
+          .find((o) => o.id === modifiedObject.referenceId);
         setSelectedObject(line);
       } else setSelectedObject({ ...modifiedObject });
       // convertPxToPercentage(
@@ -819,14 +858,13 @@ const useObjectCustomizationHandlers = ({
 
   const findDynamicRanges = (activeTextObj, line) => {
     const characters = activeTextObj.text.split("");
-    let dynamicRanges = [];
+    const dynamicRanges = [];
     let dynamicRangeStart = -1;
     let dynamicRangeEnd = -1;
     const textStyles = activeTextObj.styles[line];
 
     // Iterate over each character
     for (let i = 0; i < characters.length; i++) {
-      const char = characters[i];
       const charIndex = i.toString();
 
       // Check if the character's style has a "type" property set to "dynamic"
@@ -891,9 +929,9 @@ const useObjectCustomizationHandlers = ({
     if (activeObject && activeObject.type === "IText") {
       const cursorPosition = activeObject.selectionStart; // Get the current cursor position
       const addedText = isOneOfWords ? " " + value + " " : value;
-      let currentText = activeObject.text;
-      let firstPart = currentText.slice(0, cursorPosition);
-      let secondPart = currentText.slice(cursorPosition);
+      const currentText = activeObject.text;
+      const firstPart = currentText.slice(0, cursorPosition);
+      const secondPart = currentText.slice(cursorPosition);
 
       // Combine the first part, inserted text, and second part together
       const newText = firstPart + addedText + secondPart;
@@ -902,7 +940,7 @@ const useObjectCustomizationHandlers = ({
       activeObject.set("text", newText);
       canvas.renderAll();
 
-      if (cursorPosDelete !== undefined && afterDelOrAdd == "delete") {
+      if (cursorPosDelete !== undefined && afterDelOrAdd === "delete") {
         activeObject.setSelectionStart(cursorPosDelete);
         activeObject.setSelectionEnd(cursorPosDelete);
       } else {
@@ -926,10 +964,10 @@ const useObjectCustomizationHandlers = ({
     const objects = selectedObject.getObjects();
     const backgroundRect = objects[0];
     const media = objects[1];
-    if (value == "fill") media.set("objectFit", "fill");
-    else if (value == "contain") media.set("objectFit", "contain");
+    if (value === "fill") media.set("objectFit", "fill");
+    else if (value === "contain") media.set("objectFit", "contain");
     else media.set("objectFit", "cover");
-    if (media.getElement().localName == "img") {
+    if (media.getElement().localName === "img") {
       multiMediaObjectFit(canvas, backgroundRect, media, value);
       canvas.renderAll();
     }

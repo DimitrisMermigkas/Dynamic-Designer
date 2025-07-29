@@ -264,7 +264,7 @@ export const loadVideoThumbnail = async (
         transformOrigin: "left top",
         id: uuid(),
         superType: "Multimedia",
-        name: "Multimedia",
+        name: objectGroup.name || "Multimedia",
       };
 
       const imageData = getThumbnailFromCanvas(width, height, videoElement);
@@ -487,7 +487,7 @@ export const loadImageElement = async (
           transformOrigin: "left top",
           id: uuid(),
           superType: "Multimedia",
-          name: "Multimedia",
+          name: objectGroup.name || "Multimedia",
         };
         const { media, rect } = createObjectGroup(
           imageElement,

@@ -6,7 +6,7 @@ import rainy from "../../assets/images/weather/rainy-5.svg";
 import snowy from "../../assets/images/weather/snowy-6.svg";
 import { css } from "@emotion/css";
 import { Weather as WeatherConfig } from "@client/schemas/schemaDesigner";
-import { baseConfigToStyle } from "../../utils/styleUtils";
+import { baseConfigToStyle, convertColor } from "../../utils/styleUtils";
 
 type Mode = "vertical" | "horizontal" | "minimized";
 export type WeatherCondition =
@@ -46,6 +46,7 @@ const generateClasses = ({
   borderRadius,
   mode,
   fontSize,
+  textColor,
   screenDimension,
 }: {
   left: number;
@@ -58,6 +59,7 @@ const generateClasses = ({
   borderRadius: number;
   mode?: Mode;
   fontSize?: string;
+  textColor?: string;
   screenDimension: { width: number; height: number };
 }) => ({
   containerMinimized: css`
@@ -87,6 +89,9 @@ const generateClasses = ({
     background: ${backgroundColor};
     border: ${borderWidth}px solid ${borderColor};
     box-sizing: border-box;
+    h1 {
+      color: ${textColor};
+    }
     border-radius: ${borderRadius}px;
     h2,
     h3,
@@ -94,10 +99,11 @@ const generateClasses = ({
     h5,
     h6,
     p {
+      color: ${textColor};
       display: flex;
       justify-content: center;
       font-size: ${Math.max(
-        20, // Minimum font size
+        16, // Minimum font size
         Math.min(currentHeight / 22, currentWidth / 28) // Average-based scaling
       )}px;
     }
@@ -138,13 +144,14 @@ const generateClasses = ({
       ? "column"
       : "row"};
     justify-content: space-evenly;
-    align-items: center;
+    align-items: flex-start;
+    margin-top: 10px;
     width: 100%;
   `,
   daysContainer: css`
     display: flex;
     justify-content: center;
-    height: ${currentHeight === "100%" ? "100%" : currentHeight + "px"};
+    height: 100%;
     width: 100%;
   `,
   currentTemperature: css`
@@ -182,8 +189,8 @@ const generateClasses = ({
     margin: ${Math.max(5, currentWidth / 264)}px; // Dynamic margin
   `,
   day: css`
-    width: 12%;
-    height: 40%;
+    width: 100%;
+    height: 100%;
     text-align: center;
   `,
   dayVertical: css`
@@ -232,10 +239,12 @@ const calculateTitleFontSize = (width: number, height: number): string => {
 };
 
 function weatherStyleConfig(config: WeatherConfig) {
-  const style: React.CSSProperties = {
+  const style: React.CSSProperties & { textColor?: string } = {
     ...baseConfigToStyle(config),
-    backgroundColor: config.settings?.backgroundColor || "transparent",
-    borderColor: config.settings?.borderColor,
+    backgroundColor:
+      convertColor(config.settings?.backgroundColor) || "transparent",
+    textColor: convertColor(config.settings?.textColor) || "#000000",
+    borderColor: convertColor(config.settings?.borderColor),
     borderWidth: config.settings?.borderWidth,
     borderRadius: config.settings?.borderRadius,
   };
@@ -486,6 +495,7 @@ export const Weather = ({ config, screenDimension, data }: WeatherProps) => {
   const currentWidth = config.width ?? 500;
   const currentHeight = config.height ?? "100%";
   const backgroundColor = style?.backgroundColor ?? "transparent";
+  const textColor = style?.textColor ?? "#000000";
   const borderColor = style?.borderColor ?? "transparent";
   const borderWidth = (style?.borderWidth as number) ?? 0;
   const borderRadius = (style?.borderRadius as number) ?? 0;
@@ -568,6 +578,7 @@ export const Weather = ({ config, screenDimension, data }: WeatherProps) => {
     borderRadius,
     mode,
     fontSize,
+    textColor,
     screenDimension,
   });
 

@@ -10,7 +10,7 @@ export const updateSelectedDesignState = (
 ) => {
   const designScreens = [...selectedDesign.Configuration.screens]; // Create a copy of the screens array
   let newScreens = designScreens.map((screen, i) => {
-    if (i == screenIndex) {
+    if (i === screenIndex) {
       const updatedScreen = { ...screen, [key]: value };
       return updatedScreen;
     } else return screen;
@@ -36,8 +36,11 @@ const resolutions = {
     { width: 800, height: 600 },
   ],
   portrait: [
-    { width: 1024, height: 1366, label: "1024 x 1366 (iPad Pro)" },
+    { width: 1080, height: 1920, label: "1080 x 1920" },
+    { width: 900, height: 1400, label: "900 x 1400" },
+    { width: 800, height: 1200, label: "800 x 1200" },
     { width: 768, height: 1024, label: "768 x 1024 (iPad)" },
+    { width: 600, height: 800, label: "600 x 800 (iPad Mini)" },
     {
       width: 414,
       height: 896,
@@ -125,7 +128,7 @@ const useOptionsHandlers = ({
 
     const allScreens = [...selectedDesign.Configuration.screens]; // Create a copy of the screens array
     const updatedScreens = allScreens.map((screen) => {
-      if (screen.id == selectedDesign.Configuration.screens[screenIndex].id) {
+      if (screen.id === selectedDesign.Configuration.screens[screenIndex].id) {
         const newResScreen = {
           ...selectedDesign.Configuration.screens[screenIndex],
           resolution: selectedRes,
@@ -177,7 +180,7 @@ const useOptionsHandlers = ({
   const handleMakeDefaultScreen = (event) => {
     const designScreens = [...selectedDesign.Configuration.screens]; // Create a copy of the screens array
     let newScreens = designScreens.map((screen, i) => {
-      if (i == screenIndex) {
+      if (i === screenIndex) {
         const updatedScreen = { ...screen, default: event.target.checked };
         return updatedScreen;
       } else return { ...screen, default: false };

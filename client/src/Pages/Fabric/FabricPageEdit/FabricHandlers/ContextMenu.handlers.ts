@@ -29,15 +29,15 @@ const useContextMenuHandlers = ({
       left: Math.round(pointerPosition.x),
       top: Math.round(pointerPosition.y),
     };
-    if (index == 0) {
+    if (index === 0) {
       const multiplier =
         canvas.width /
         selectedDesign.Configuration.screens[screenIndex].resolution.width;
 
       addElement(necessaryProp1, position, necessaryProp2, multiplier);
-    } else if (index == 1) {
+    } else if (index === 1) {
       initializeShapes(necessaryProp1, necessaryProp2, dispatch);
-    } else if (index == 2) {
+    } else if (index === 2) {
       addCustomObject(
         necessaryProp1,
         necessaryProp2,
@@ -96,10 +96,10 @@ const useContextMenuHandlers = ({
   };
 
   const itemMenuClick = (type) => {
-    if (type == "delete") {
+    if (type === "delete") {
       if (selectedObject) {
         setSelectedObject(null);
-        if (selectedObject.type == "activeSelection") {
+        if (selectedObject.type === "activeSelection") {
           const objects = selectedObject.getObjects();
           let ids = [];
           objects.forEach((obj) => {
@@ -110,19 +110,19 @@ const useContextMenuHandlers = ({
           canvas.remove(selectedObject);
         }
       }
-    } else if (type == "sendToBack") {
+    } else if (type === "sendToBack") {
       handleStackingOrder("sendToBack");
-    } else if (type == "sendBackwards") {
+    } else if (type === "sendBackwards") {
       handleStackingOrder("sendBackwards");
-    } else if (type == "bringForwards") {
-      handleStackingOrder("bringForwards");
-    } else if (type == "bringToFront") {
+    } else if (type === "bringForward") {
+      handleStackingOrder("bringForward");
+    } else if (type === "bringToFront") {
       handleStackingOrder("bringToFront");
-    } else if (type == "duplicate") {
+    } else if (type === "duplicate") {
       handleDuplicate(itemMenuData);
     }
     canvas.fire("objectPos:changed", { canvas: canvas });
-    // } else if (type == "removeMedia") {
+    // } else if (type === "removeMedia") {
     //   handleMedia(itemMenuData.ID, droppedTiles);
     // }
 

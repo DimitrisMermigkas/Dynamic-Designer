@@ -22,8 +22,10 @@ const useMultiMediaHandlers = ({ canvas }) => {
       transformOrigin: "left top",
       id: uuid(),
     };
-
-    if (file.type.split("/")[0] == "image") {
+    if (selectedObj && typeof selectedObj.set == "function") {
+      selectedObj.set("name", file.name);
+    }
+    if (file.type.split("/")[0] === "image") {
       // Create an Image object to get the width and height of the image
       const image = new Image();
       image.onload = function () {
@@ -49,7 +51,7 @@ const useMultiMediaHandlers = ({ canvas }) => {
       };
 
       image.src = fileData;
-    } else if (file.type.split("/")[0] == "video") {
+    } else if (file.type.split("/")[0] === "video") {
       const videoElement = document.createElement("video");
 
       const container = document.querySelector(".designatedArea");
@@ -136,6 +138,9 @@ const useMultiMediaHandlers = ({ canvas }) => {
       );
 
     let srcUrl = "";
+    if (selectedObj && typeof selectedObj.set == "function") {
+      selectedObj.set("name", itemForPreview.name);
+    }
     if (isImage) {
       loadImageElement(srcUrl, selectedObj, "contain", null, canvas, "");
     } else if (isHTMLVideoType) {

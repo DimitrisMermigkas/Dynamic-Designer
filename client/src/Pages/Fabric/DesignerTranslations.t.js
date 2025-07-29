@@ -27,7 +27,7 @@ const translations = {
   selectRes: { en: "Select resolution", el: "Επιλέξτε ανάλυση" },
   screenDetails: { en: "Screen details", el: "Λεπτομέρειες οθόνης" },
   widgets: { en: "Widgets", el: "Γραφικά στοιχεία" },
-  bringForwards: { en: "Bring forwards", el: "Μεταφορά προς τα μπροστά" },
+  bringForwards: { en: "Bring forward", el: "Μεταφορά προς τα εμπρός" },
   bringToFront: { en: "Bring to front", el: "Μεταφορά στην επιφάνεια" },
   sendBackwards: { en: "Send backwards", el: "Μεταφορά προς τα πίσω" },
   sendToBack: { en: "Send to back", el: "Μεταφορά στο βάθος" },

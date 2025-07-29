@@ -15,29 +15,29 @@ const convertTriggersFromSchema = (dataArray) => {
 
 const addCustomObjectSettings = (type, objectExists, existingObj) => {
   let settings;
-  if (type == "RSSFeed") {
+  if (type === "RSSFeed") {
     if (objectExists) settings = existingObj.settings;
     else settings = NewsTickerSettings;
     return settings;
-  } else if (type == "QRCode") {
+  } else if (type === "QRCode") {
     if (objectExists) settings = existingObj.settings;
     else settings = QRCodeSettings;
     return settings;
-  } else if (type == "Button") {
+  } else if (type === "Button") {
     if (objectExists) settings = existingObj.settings;
     else settings = ButtonSettings;
     return settings;
-  } else if (type == "Weather") {
+  } else if (type === "Weather") {
     if (objectExists) settings = existingObj.settings;
     else
       settings = {
-        backgroundColor: "#FFFFFFFF",
+        backgroundColor: "#FFFFFF00",
         borderWidth: 1,
         borderColor: "#00000000",
         borderRadius: 16,
       };
     return settings;
-  } else if (type == "Embed") {
+  } else if (type === "Embed") {
     if (objectExists) settings = existingObj.settings;
     else
       settings = {
@@ -60,7 +60,7 @@ const createFabricImage = (
 ) => {
   //superType exists only on front end, that way the existingObj will be a canvas obj and not just an obj of db.
   //i want to extract the 1st object in each case which has the fill stroke strokeWidth, if obj from db, it has the stroke,fill from the 1st obj.
-  // if (existingObj && existingObj.superType && typeValue == "Weather") {
+  // if (existingObj && existingObj.superType && typeValue === "Weather") {
   //   objects = existingObj.getObjects();
   // }
 
@@ -103,13 +103,13 @@ const createFabricImage = (
             width: existingObj.width,
           });
           canvas.getObjects().forEach((obj) => {
-            if (obj.id == existingObj.id) {
+            if (obj.id === existingObj.id) {
               canvas.remove(obj);
             }
           });
         } else {
           //initial position values for customElement
-          if (typeValue == "RSSFeed") {
+          if (typeValue === "RSSFeed") {
             rect.set({
               top: canvas.height * 0.8,
               left: 0,
@@ -150,7 +150,7 @@ const createFabricImage = (
         // Add additional settings for custom object
         group.set("settings", settings);
         // Add additional triggers for button type object
-        if (typeValue == "Button" && existingObj?.triggers) {
+        if (typeValue === "Button" && existingObj?.triggers) {
           const triggers = convertTriggersFromSchema(existingObj.triggers);
           group.set("triggers", triggers);
         }
@@ -207,7 +207,7 @@ export const createSnapshotOfElement = async (
           backgroundColor: null,
           width: stringElement.offsetWidth + 2,
           height: stringElement.offsetHeight + 2,
-          scale: type == "RSSFeed" ? 1 : scale,
+          scale: type === "RSSFeed" ? 1 : scale,
           useCORS: true,
         });
         container.removeChild(parentDiv);

@@ -45,6 +45,7 @@ type StyleConfig = {
   opacity?: number;
   visible?: boolean;
   backgroundColor?: string;
+  foregroundColor?: string;
   type?: string;
   color?: string;
   settings?: any;
@@ -57,6 +58,7 @@ export function configToStyle(config: StyleConfig) {
     strokeWidth,
     opacity,
     backgroundColor,
+    foregroundColor,
     borderColor,
     borderWidth,
     type,
@@ -72,6 +74,7 @@ export function configToStyle(config: StyleConfig) {
     backgroundColor: settingsBackgroundColor,
     borderColor: settingsBorderColor,
     borderWidth: settingsBorderWidth,
+    foregroundColor: settingsForegroundColor,
   } = config.settings || {};
 
   const style: React.CSSProperties = {
@@ -79,6 +82,8 @@ export function configToStyle(config: StyleConfig) {
     backgroundColor:
       convertColor(settingsBackgroundColor || backgroundColor || fill) ||
       "transparent",
+    color:
+      convertColor(settingsForegroundColor || foregroundColor) || "#000000",
     border: `${settingsBorderWidth ?? borderWidth ?? strokeWidth}px solid ${
       settingsBorderColor || borderColor || stroke
     }`,

@@ -67,7 +67,6 @@ const FabricItemOptions = (type, multiplier?: number) => {
         height: 30,
         name: "New text",
         text: "Text",
-        fontSize: 32 * multiplier,
         fontFamily: "Poppins",
         autoSetWidth: false,
         color: "#000000FF",

@@ -143,6 +143,7 @@ function AutocompleteVirtualized<
   textfieldProps,
   disableAutoComplete,
   onCreate,
+  renderOption,
   ...props
 }: AutocompleteVirtualizedProps<ValueType, OptionType>) {
   const { classes } = useStyles();
@@ -177,13 +178,18 @@ function AutocompleteVirtualized<
           InputProps={{ ...params.InputProps, ...textfieldProps?.InputProps }}
         />
       )}
-      renderOption={(props, option) => (
-        <li {...props}>
-          <Typography noWrap={true} title={option.label}>
-            {option.label}
-          </Typography>
-        </li>
-      )}
+      renderOption={
+        renderOption ||
+        ((props, option) => {
+          return (
+            <li {...props} key={option.value}>
+              <Typography noWrap={true} title={option.label}>
+                {option.label}
+              </Typography>
+            </li>
+          );
+        })
+      }
       slotProps={{
         listbox: {
           component: ListboxComponent as React.ComponentType<

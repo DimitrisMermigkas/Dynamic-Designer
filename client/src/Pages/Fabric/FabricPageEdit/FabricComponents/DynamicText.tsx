@@ -86,7 +86,9 @@ const DynamicText = ({ addDynamicText, classes }) => {
       }}
       className={classes.formControl}
     >
-      <Typography>{t("DesignerTranslations.t.dynamicParameters")}</Typography>
+      <Typography style={{ display: "flex" }}>
+        {t("DesignerTranslations.t.dynamicParameters")}
+      </Typography>
       <AutocompleteVirtualized
         style={{ width: "100%" }}
         key="dynamic-text-add"

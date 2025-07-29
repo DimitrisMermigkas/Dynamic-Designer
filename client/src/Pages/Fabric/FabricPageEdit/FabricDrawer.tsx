@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Drawer, IconButton, Tooltip, useTheme } from "@mui/material";
+import { Drawer, useTheme } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import FabricSecondDrawer from "./FabricComponents/FabricSecondDrawer";
@@ -75,11 +75,11 @@ const FabricDrawer = ({
   };
 
   const switchDrawerPopover = (value) => (e) => {
-    if (value == "Library" || value == "Layers") {
+    if (value === "Library" || value === "Layers") {
       if (
         secondDrawerOpen &&
         secondDrawerOpen.open &&
-        secondDrawerOpen.drawerComp == value
+        secondDrawerOpen.drawerComp === value
       )
         handleSecondDrawerClose();
       else {
@@ -176,6 +176,7 @@ const FabricDrawer = ({
       component: (
         <CustomTextField
           inputRef={zoomTextRef}
+          key="zoom-text-field"
           type="text"
           disabled
           style={{ maxWidth: "64.5px" }}
@@ -188,7 +189,7 @@ const FabricDrawer = ({
         />
       ),
     },
-    cursorState == "pointer"
+    cursorState === "pointer"
       ? {
           name: t("DesignerTranslations.t.pointer"),
           icon: PointerSvg,
@@ -288,7 +289,7 @@ const FabricDrawer = ({
                 style={{ display: "flex", borderRadius: 0 }}
                 onClick={icon.onClick}
                 size="large"
-                disabled={icon.name == "Library"}
+                disabled={icon.name === "Library"}
                 sx={{
                   "&:disabled": {
                     opacity: 0.5,
@@ -298,7 +299,7 @@ const FabricDrawer = ({
               >
                 {React.createElement(icon.icon, {
                   fill:
-                    secondDrawerOpen.drawerComp == icon.name
+                    secondDrawerOpen.drawerComp === icon.name
                       ? theme.palette.primary.main
                       : currentTheme === "light"
                       ? "black"
@@ -313,7 +314,7 @@ const FabricDrawer = ({
       </Drawer>
       {secondDrawerOpen.open && (
         <FabricSecondDrawer open={secondDrawerOpen?.open}>
-          {secondDrawerOpen.drawerComp == "Layers" && (
+          {secondDrawerOpen.drawerComp === "Layers" && (
             <ScreensLayers
               selectedDesign={selectedDesign}
               setSelectedDesign={setSelectedDesign}

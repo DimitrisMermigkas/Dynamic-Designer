@@ -5,8 +5,8 @@ import { v4 as uuid } from "uuid";
 import { fabricPageActions } from "../../FabricPageRedAct";
 import { createSnapshotOfElement } from "../FabricComponents/CustomElementsHelper";
 import {
-  loadImageElement,
-  loadVideoThumbnail,
+  // loadImageElement,
+  // loadVideoThumbnail,
   multiMediaObjectFit,
 } from "../FabricComponents/MultimediaHelper";
 import CustomItemsPicker from "../FabricItemsSchema/CustomItemsPicker";
@@ -18,6 +18,7 @@ import {
 } from "./Toolbar.handlers";
 import { useDispatch, useSelector } from "react-redux";
 import isEmpty from "lodash/isEmpty";
+import { loadFonts } from "./FontUtils";
 
 export const removePolygonMask = () => {
   const drawerElement = document.getElementById("DrawerV2");
@@ -58,7 +59,7 @@ export const setDimensionsCanvas = (
   orientation
 ) => {
   const defaultDimensions =
-    orientation == "landscape"
+    orientation === "landscape"
       ? { width: 1920, height: 1080 }
       : { width: 430, height: 763 };
   const screenWidth = resolution?.width || defaultDimensions.width;
@@ -185,7 +186,7 @@ const updateCanvasObjects = (newCanvas, screenRes, multiplier) => {
       otherObjs.superType !== "customObject"
   );
   for (const obj of allOtherObjs) {
-    if (obj.type == "Multimedia") {
+    if (obj.type === "Multimedia") {
       if (obj.path !== "") {
         // Get the objects within the group
         const objects = obj.getObjects();
@@ -215,7 +216,7 @@ const updateCanvasObjects = (newCanvas, screenRes, multiplier) => {
           ZoomX: 1,
           ZoomY: 1,
         });
-        if (objects.length > 1 && media.getElement().localName == "img") {
+        if (objects.length > 1 && media.getElement().localName === "img") {
           multiMediaObjectFit(
             newCanvas,
             backgroundRect,
@@ -232,14 +233,14 @@ const updateCanvasObjects = (newCanvas, screenRes, multiplier) => {
         top: obj.top * multFactor,
         left: obj.left * multFactor,
       });
-      if (obj.type == "IText") {
+      if (obj.type === "IText") {
         obj.set({ fontSize: obj.fontSize * multFactor });
       }
       obj.setCoords();
     }
   }
   //Update customObjects position and size on canvas resizing.
-  const customObjs = objects.filter((co) => co.superType == "customObject");
+  const customObjs = objects.filter((co) => co.superType === "customObject");
   if (customObjs.length > 0) {
     for (const co of customObjs) {
       const objSettings = {
@@ -302,21 +303,13 @@ export const designToCanvas2 = async (configuration, canvas) => {
         }
       );
       switch (convertedObj.type) {
-        case "IText":
-          const fontSizeUpdated = convertToFontSize(
-            { width: canvas.width, height: canvas.height },
-            configuration.resolution,
-            convertedObj.settings.fontSize,
-            false
-          );
-          convertedObj.settings = {
-            ...convertedObj.settings,
-            fontSize: fontSizeUpdated,
-          };
-
+        case "IText": {
           // Pre-transform the content array for dynamic texts
-          convertedObj.settings.content = convertedObj.settings.content.map(
-            (item) => {
+          // Create a deep copy to avoid modifying read-only properties
+          const convertedObjCopy = JSON.parse(JSON.stringify(convertedObj));
+
+          convertedObjCopy.settings.content =
+            convertedObjCopy.settings.content.map((item) => {
               if (item.type === "dynamic") {
                 return {
                   ...item,
@@ -324,21 +317,20 @@ export const designToCanvas2 = async (configuration, canvas) => {
                 };
               }
               return item; // Leave static text unchanged
-            }
-          );
+            });
 
           // Construct the complete text for the Textbox
-          let text = convertedObj.settings.content.reduce(
+          const text = convertedObjCopy.settings.content.reduce(
             (acc, value) => acc + value.text,
             ""
           );
 
           const iText = new fabric.Textbox(text, {
-            ...convertedObj,
-            ...convertedObj.settings,
+            ...convertedObjCopy,
+            ...convertedObjCopy.settings,
           });
 
-          const iTextStyles = convertedObj.settings.content;
+          const iTextStyles = convertedObjCopy.settings.content;
 
           const applyTextStyle = (iText, start, end, style) => {
             iText.setSelectionStart(start);
@@ -351,30 +343,39 @@ export const designToCanvas2 = async (configuration, canvas) => {
             const currentStyle = iTextStyles[i].style;
             const currentType = iTextStyles[i].type;
             let style = {};
+            const convertedFontSize = convertToFontSize(
+              { width: canvas.width, height: canvas.height },
+              configuration.resolution,
+              currentStyle.fontSize,
+              false
+            );
             if (!isEmpty(currentStyle) && !currentType) {
               style = {
-                fill: currentStyle.color,
                 ...currentStyle,
+                fill: currentStyle.color,
+                fontSize: convertedFontSize,
               };
             } else if (currentType && !isEmpty(currentStyle)) {
               style = {
-                fill: currentStyle.color,
                 ...currentStyle,
+                fill: currentStyle.color,
+                fontSize: convertedFontSize,
                 type: currentType,
                 textBackgroundColor: "#CDD0D6",
               };
             } else if (currentType && isEmpty(currentStyle)) {
               style = {
                 type: currentType,
+                fontSize: convertedFontSize,
                 textBackgroundColor: "#CDD0D6",
               };
             }
-            if (i == 0) {
+            if (i === 0) {
               selectorIndex = iTextStyles[0].text.length;
               applyTextStyle(iText, 0, selectorIndex, style);
             } else {
-              let start = selectorIndex;
-              let end = iTextStyles[i].text.length;
+              const start = selectorIndex;
+              const end = iTextStyles[i].text.length;
               applyTextStyle(iText, start, start + end, style);
               selectorIndex = start + iTextStyles[i].text.length;
             }
@@ -385,13 +386,13 @@ export const designToCanvas2 = async (configuration, canvas) => {
           iText.controls = controls;
           canvas.add(iText);
           break;
-
+        }
         case "Line":
           let x1;
           let y1;
           let x2;
           let y2;
-          if (convertedObj.startingPoint == "topLeft") {
+          if (convertedObj.startingPoint === "topLeft") {
             x1 = -convertedObj.width / 2;
             y1 = -convertedObj.height / 2;
             x2 = convertedObj.width / 2;
@@ -413,18 +414,18 @@ export const designToCanvas2 = async (configuration, canvas) => {
         case "Button":
         case "Embed":
         case "QRCode":
-          if (convertedObj.type == "Button") {
+          if (convertedObj.type === "Button") {
             convertedObj.triggers = convertedObj.triggers.map((item) => ({
               type: item.type,
               action: item.actions[0].type,
               referenceId: item.actions[0].referenceId,
             }));
-          } else if (convertedObj.type == "Embed") {
+          } else if (convertedObj.type === "Embed") {
             convertedObj.settings = {
               ...convertedObj.settings,
               embedLink: convertedObj.settings.link,
             };
-          } else if (convertedObj.type == "QRCode") {
+          } else if (convertedObj.type === "QRCode") {
             const initialState = {
               typeText: "",
               staticText: "",
@@ -613,7 +614,7 @@ export const designToCanvas2 = async (configuration, canvas) => {
 //                 textBackgroundColor: "#CDD0D6",
 //               };
 //             }
-//             if (i == 0) {
+//             if (i === 0) {
 //               selectorIndex = iTextStyles[0].text.length;
 //               applyTextStyle(iText, 0, selectorIndex, style);
 //             } else {
@@ -635,7 +636,7 @@ export const designToCanvas2 = async (configuration, canvas) => {
 //           let y1;
 //           let x2;
 //           let y2;
-//           if (convertedObj.startingPoint == "topLeft") {
+//           if (convertedObj.startingPoint === "topLeft") {
 //             x1 = -convertedObj.width / 2;
 //             y1 = -convertedObj.height / 2;
 //             x2 = convertedObj.width / 2;
@@ -662,9 +663,9 @@ export const designToCanvas2 = async (configuration, canvas) => {
 //             const srcUrl = constructSrcURL({ path: filePath }, sasObject);
 
 //             let indexOfConfiguration = configuration.objects.findIndex(
-//               (config) => config == convertedObj
+//               (config) => config === convertedObj
 //             );
-//             if (convertedObj.settings.mediaType == "video") {
+//             if (convertedObj.settings.mediaType === "video") {
 //               await loadVideoThumbnail(
 //                 srcUrl,
 //                 convertedObj,
@@ -691,18 +692,18 @@ export const designToCanvas2 = async (configuration, canvas) => {
 //         case "Button":
 //         case "Embed":
 //         case "QRCode":
-//           if (convertedObj.type == "Button") {
+//           if (convertedObj.type === "Button") {
 //             convertedObj.triggers = convertedObj.triggers.map((item) => ({
 //               type: item.type,
 //               action: item.actions[0].type,
 //               referenceId: item.actions[0].referenceId,
 //             }));
-//           } else if (convertedObj.type == "Embed") {
+//           } else if (convertedObj.type === "Embed") {
 //             convertedObj.settings = {
 //               ...convertedObj.settings,
 //               embedLink: convertedObj.settings.link,
 //             };
-//           } else if (convertedObj.type == "QRCode") {
+//           } else if (convertedObj.type === "QRCode") {
 //             const initialState = {
 //               typeText: "",
 //               staticText: "",
@@ -838,7 +839,12 @@ const useEditHandlers = ({ initialDesign, screenIndex, setScreenIndex }) => {
 
   useEffect(() => {
     let newCanvas = null;
-    if (screenIndex == -1) {
+    const loadFontsAsync = async (canvas) => {
+      await loadFonts();
+      await document.fonts.ready;
+    };
+
+    if (screenIndex === -1) {
       setScreenIndex(0);
       return;
     }
@@ -869,6 +875,7 @@ const useEditHandlers = ({ initialDesign, screenIndex, setScreenIndex }) => {
         viewportZoom: 1,
         selectionKey: "ctrlKey",
       });
+      loadFontsAsync(newCanvas);
       setCanvas(newCanvas);
     }
     if (firstTimeLoading) {
@@ -908,32 +915,17 @@ const useEditHandlers = ({ initialDesign, screenIndex, setScreenIndex }) => {
         selectedDesign.Configuration.screens[screenIndex],
         canvas
       );
+      canvas.discardActiveObject();
       canvas.renderAll();
     }
+
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current); // Clear the timeout on unmount
       }
     };
-  }, [screenIndex, selectedDesign?.ID]);
-
-  // // TODO merge with useEffect above?
-  // useEffect(() => {
-  //   if (canvas) {
-  //     designToCanvas(
-  //       selectedDesign.Configuration.screens[screenIndex],
-  //       canvas,
-  //       sasObject,
-  //       addPlaylist
-  //     ).then((resolve) => {
-  //       canvas.discardActiveObject();
-  //       resolve.clone((cloned) => {
-  //         setLoadingCanvas(false);
-  //       });
-  //     });
-  //   }
-  // }, [canvas]);
+  }, [canvas, screenIndex, selectedDesign?.ID]);
 
   const addNewScreenToDesign = () => {
     const newScreens = [...selectedDesign.Configuration.screens]; // Create a copy of the screens array
@@ -983,7 +975,7 @@ const useEditHandlers = ({ initialDesign, screenIndex, setScreenIndex }) => {
     const tempScreenConfig = exportCanvas(canvas, selectedDesign, screenIndex);
     const designScreens = [...selectedDesign.Configuration.screens]; // Create a copy of the screens array
     let newScreens = designScreens.map((screen, i) => {
-      if (i == screenIndex) {
+      if (i === screenIndex) {
         return tempScreenConfig;
       } else return screen;
     });

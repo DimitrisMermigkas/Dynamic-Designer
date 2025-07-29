@@ -13,6 +13,7 @@ export const QRCodeSettings = {
   showRadioGroup: false,
   currentHeight: 128,
   currentWidth: 128,
+  foregroundColor: "#000000FF",
   typeText: "static",
   backgroundColor: "rgba(255,255,255,0)",
   borderColor: "rgba(255,255,255,0)",
@@ -34,14 +35,16 @@ export const QRCode = ({ config }: QRCodeProps) => {
       ? getDynamicDetail(config.settings.text)
       : config.settings.text;
 
+  const qrText = text || QRCodeSettings.text;
   return (
     <div style={style}>
-      {text && (
+      {qrText && (
         <QRCodeSVG
           includeMargin
           bgColor={"transparent"}
           size={Math.min(config.width || 0, config.height || 0)}
-          value={text || ""}
+          value={qrText}
+          fgColor={config.settings.foregroundColor || "#000000FF"}
         />
       )}
     </div>

@@ -1,40 +1,187 @@
 import _ from "lodash";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import { fabric } from "fabric";
 
 const useGuidelinesHandlers = ({ canvas, screenResolution }) => {
   //   const viewportTransform = handler.viewportTransform.slice();
-  const aligningLineOffset = 0;
-  const aligningLineMargin = 3;
+  const aligningLineMargin = 1;
   const aligningLineWidth = 1;
   const aligningLineColor = "rgb(255, 0, 0)";
-  let verticalLines = [];
-  let horizontalLines = [];
+
+  // Change from useRef to useState
+  const [verticalLines, setVerticalLines] = useState([]);
+  const [horizontalLines, setHorizontalLines] = useState([]);
+  const [intersectionPoints, setIntersectionPoints] = useState([]);
+  const markerSize = 6; // Size of the X marker in pixels
+
   const ctx = useMemo(() => {
     if (canvas) {
       return canvas.getContext("2d");
     }
   }, [canvas]);
 
-  useEffect(() => {
-    if (canvas) {
-      canvas.on("after:render", function (options) {
-        for (let i = verticalLines.length; i--; ) {
-          drawVerticalLine(verticalLines[i]);
-        }
+  // Move drawLine outside useEffect to ensure it always has latest values
+  const drawLine = useCallback(
+    (x1, y1, x2, y2, calculations, alignmentType) => {
+      if (!ctx || !canvas) return;
 
-        for (let i = horizontalLines.length; i--; ) {
-          drawHorizontalLine(horizontalLines[i]);
-        }
-      });
-      canvas.on("mouse:up", function (options) {
-        verticalLines.length = 0;
-        horizontalLines.length = 0;
-      });
-    }
-  }, [canvas]);
+      ctx.save();
+      ctx.lineWidth = aligningLineWidth;
+      ctx.strokeStyle = aligningLineColor;
+      ctx.beginPath();
+      const startingPoint = {
+        x:
+          x1 * canvas.scrollingZoom * canvas.viewportZoom +
+          canvas.viewportTransform[4],
+        y:
+          y1 * canvas.scrollingZoom * canvas.viewportZoom +
+          canvas.viewportTransform[5],
+      };
+      const endPoint = {
+        x:
+          x2 * canvas.scrollingZoom * canvas.viewportZoom +
+          canvas.viewportTransform[4],
+        y:
+          y2 * canvas.scrollingZoom * canvas.viewportZoom +
+          canvas.viewportTransform[5],
+      };
+      ctx.moveTo(startingPoint.x, startingPoint.y);
+      ctx.lineTo(endPoint.x, endPoint.y);
+      ctx.stroke();
 
-  const isInRange = (v1, v2) => {
+      if (calculations) {
+        // Calculate the actual distance based on nearest corners from calculations
+        const actualDistance = Math.abs(
+          calculations.calculationCorner2 - calculations.calculationCorner1
+        );
+
+        // Convert the distance to screen resolution
+        const dim = calculations.axis === "Y" ? "height" : "width";
+        const length = Math.round(
+          (actualDistance * screenResolution[dim]) / canvas[dim]
+        );
+
+        // Get all lines for this target object
+        const currentLines =
+          calculations.axis === "Y" ? verticalLines : horizontalLines;
+        const linesForTarget = currentLines.filter(
+          (l) => l.calculations?.targetId === calculations?.targetId
+        );
+
+        // Show text if:
+        // 1. It's the only line for this target
+        // 2. It's a center alignment
+        // 3. If there are multiple lines but no center alignment, show text on all lines
+        const shouldShowText =
+          linesForTarget.length === 1 ||
+          alignmentType === "center" ||
+          linesForTarget.length !== 3;
+
+        if (shouldShowText) {
+          // Calculate the midpoint between nearest corners for text placement
+          const midX =
+            calculations.axis === "Y"
+              ? x1 + 10 // For vertical lines, use the line's x position
+              : (calculations.calculationCorner1 +
+                  calculations.calculationCorner2) /
+                2;
+
+          const midY =
+            calculations.axis === "Y"
+              ? (calculations.calculationCorner1 +
+                  calculations.calculationCorner2) /
+                2 // For vertical lines, use midpoint of nearest corners
+              : y1; // For horizontal lines, use the line's y position
+
+          // Set the font properties for the length text
+          const fontSize = 12;
+          const fontFamily = "Arial";
+          ctx.font = `${fontSize}px ${fontFamily}`;
+          ctx.fillStyle = aligningLineColor;
+
+          // Draw the length text at the midpoint between nearest corners
+          ctx.fillText(
+            length,
+            midX * canvas.scrollingZoom * canvas.viewportZoom +
+              canvas.viewportTransform[4] -
+              ctx.measureText(length.toString()).width / 2,
+            midY * canvas.scrollingZoom * canvas.viewportZoom +
+              canvas.viewportTransform[5] -
+              2
+          );
+        }
+      }
+
+      ctx.restore();
+    },
+    [ctx, canvas, screenResolution, verticalLines, horizontalLines]
+  );
+
+  // Move other drawing functions to useCallback as well
+  const drawVerticalLine = useCallback(
+    (coords) => {
+      // coords: { x?: number; y1?: number; y2?: number }
+      drawLine(
+        coords.x + 0.1,
+        coords.y1 > coords.y2 ? coords.y2 : coords.y1,
+        coords.x + 0.1,
+        coords.y2 > coords.y1 ? coords.y2 : coords.y1,
+        coords.calculations,
+        coords.alignmentType
+      );
+    },
+    [drawLine]
+  );
+
+  const drawHorizontalLine = useCallback(
+    (coords) => {
+      // coords: { y?: number, x1?: number, x2?: number }
+      drawLine(
+        coords.x1 > coords.x2 ? coords.x2 : coords.x1,
+        coords.y + 0.1,
+        coords.x2 > coords.x1 ? coords.x2 : coords.x1,
+        coords.y + 0.1,
+        coords.calculations,
+        coords.alignmentType
+      );
+    },
+    [drawLine]
+  );
+
+  // Function to draw an X marker at intersection points
+  const drawXMarker = useCallback(
+    (point) => {
+      if (!ctx) return;
+
+      const x =
+        point.x * canvas.scrollingZoom * canvas.viewportZoom +
+        canvas.viewportTransform[4];
+      const y =
+        point.y * canvas.scrollingZoom * canvas.viewportZoom +
+        canvas.viewportTransform[5];
+      const size = markerSize / 2;
+
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = aligningLineColor;
+
+      // Draw the X
+      ctx.beginPath();
+      ctx.moveTo(x - size, y - size);
+      ctx.lineTo(x + size, y + size);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x + size, y - size);
+      ctx.lineTo(x - size, y + size);
+      ctx.stroke();
+
+      ctx.restore();
+    },
+    [ctx, canvas]
+  );
+
+  const isInRange = useCallback((v1, v2) => {
     v1 = Math.round(v1);
     v2 = Math.round(v2);
     for (
@@ -47,670 +194,1237 @@ const useGuidelinesHandlers = ({ canvas, screenResolution }) => {
       }
     }
     return false;
-  };
+  }, []);
 
-  const drawVerticalLine = (coords) => {
-    // coords: { x?: number; y1?: number; y2?: number }
-    drawLine(
-      coords.x + 0.1,
-      coords.y1 > coords.y2 ? coords.y2 : coords.y1,
-      coords.x + 0.1,
-      coords.y2 > coords.y1 ? coords.y2 : coords.y1,
-      coords.show
-    );
-  };
+  // Function to find the corners of an object
+  const getObjectCorners = useCallback((obj) => {
+    if (!obj || obj.id === "workarea") return [];
 
-  const drawHorizontalLine = (coords) => {
-    // coords: { y?: number, x1?: number, x2?: number }
-    drawLine(
-      coords.x1 > coords.x2 ? coords.x2 : coords.x1,
-      coords.y + 0.1,
-      coords.x2 > coords.x1 ? coords.x2 : coords.x1,
-      coords.y + 0.1,
-      coords.show
-    );
-  };
+    const width = obj.width * obj.scaleX;
+    const height = obj.height * obj.scaleY;
+    const center = obj.getCenterPoint();
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
 
-  const drawLine = (x1, y1, x2, y2, showText) => {
-    ctx.save();
-    ctx.lineWidth = aligningLineWidth;
-    ctx.strokeStyle = aligningLineColor;
-    ctx.beginPath();
-    const startingPoint = {
-      x:
-        x1 * canvas.scrollingZoom * canvas.viewportZoom +
-        canvas.viewportTransform[4],
-      y:
-        y1 * canvas.scrollingZoom * canvas.viewportZoom +
-        canvas.viewportTransform[5],
-    };
-    const endPoint = {
-      x:
-        x2 * canvas.scrollingZoom * canvas.viewportZoom +
-        canvas.viewportTransform[4],
-      y:
-        y2 * canvas.scrollingZoom * canvas.viewportZoom +
-        canvas.viewportTransform[5],
-    };
-    ctx.moveTo(startingPoint.x, startingPoint.y);
-    ctx.lineTo(endPoint.x, endPoint.y);
-    ctx.stroke();
+    // Calculate the four corners
+    return [
+      { x: center.x - halfWidth, y: center.y - halfHeight }, // top-left
+      { x: center.x + halfWidth, y: center.y - halfHeight }, // top-right
+      { x: center.x + halfWidth, y: center.y + halfHeight }, // bottom-right
+      { x: center.x - halfWidth, y: center.y + halfHeight }, // bottom-left
+    ];
+  }, []);
 
-    if (showText) {
-      // Calculate the length between the two points
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const dim = dx == 0 ? "height" : "width";
-      const length = Math.round(
-        (Math.sqrt(dx * dx + dy * dy) * screenResolution[dim]) / canvas[dim]
-      );
+  useEffect(() => {
+    if (canvas) {
+      // Store the render handler function so we can remove it later
+      const renderHandler = () => {
+        // Draw vertical lines
+        for (let i = verticalLines.length; i--; ) {
+          const line = verticalLines[i];
+          drawVerticalLine(line);
+        }
 
-      // Calculate the midpoint of the line
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2;
+        // Draw horizontal lines
+        for (let i = horizontalLines.length; i--; ) {
+          const line = horizontalLines[i];
+          drawHorizontalLine(line);
+        }
 
-      // Set the font properties for the length text
-      const fontSize = 12;
-      const fontFamily = "Arial";
-      ctx.font = `${fontSize}px ${fontFamily}`;
-      ctx.fillStyle = aligningLineColor;
+        // Filter out duplicate intersection points before drawing
+        const uniqueIntersectionPoints = intersectionPoints.filter(
+          (point, index) => {
+            // Check if this point is the first occurrence of its coordinates
+            return (
+              intersectionPoints.findIndex(
+                (p) =>
+                  Math.abs(p.x - point.x) < 1 && Math.abs(p.y - point.y) < 1
+              ) === index
+            );
+          }
+        );
 
-      // Draw the length text in the middle of the line
-      ctx.fillText(
-        length,
-        midX * canvas.scrollingZoom * canvas.viewportZoom +
-          canvas.viewportTransform[4] -
-          ctx.measureText(length.toString()).width / 2,
-        midY * canvas.scrollingZoom * canvas.viewportZoom +
-          canvas.viewportTransform[5] -
-          2
-      );
+        // Draw X markers at unique intersection points only
+        for (let i = uniqueIntersectionPoints.length; i--; ) {
+          drawXMarker(uniqueIntersectionPoints[i]);
+        }
+      };
+
+      // Store the mouse up handler
+      const mouseUpHandler = () => {
+        const activeObject = canvas.getActiveObject();
+        if (activeObject && !activeObject.isPoint) {
+          // Check if we have any guidelines drawn
+          // Filter out canvas lines
+          const filteredVerticalLines = verticalLines.filter(
+            (line) => !line?.isCanvas
+          );
+          const filteredHorizontalLines = horizontalLines.filter(
+            (line) => !line?.isCanvas
+          );
+          if (
+            filteredVerticalLines.length > 0 ||
+            filteredHorizontalLines.length > 0
+          ) {
+            // Get active object bounds
+            const activeObjectBounds = activeObject.getBoundingRect(true, true);
+            const activeObjectCenter = activeObject.getCenterPoint();
+
+            // Get active object middle left, middle right, middle top, middle bottom
+            const activeObjectMiddleLeft = {
+              x: activeObjectCenter.x - activeObjectBounds.width / 2,
+              y: activeObjectCenter.y,
+            };
+            const activeObjectMiddleRight = {
+              x: activeObjectCenter.x + activeObjectBounds.width / 2,
+              y: activeObjectCenter.y,
+            };
+            const activeObjectMiddleTop = {
+              x: activeObjectCenter.x,
+              y: activeObjectCenter.y - activeObjectBounds.height / 2,
+            };
+            const activeObjectMiddleBottom = {
+              x: activeObjectCenter.x,
+              y: activeObjectCenter.y + activeObjectBounds.height / 2,
+            };
+
+            // Case 1: Only one type of lines exists
+            if (
+              filteredVerticalLines.length > 0 !==
+              filteredHorizontalLines.length > 0
+            ) {
+              // Get the single line array that exists
+              const lines =
+                filteredVerticalLines.length > 0
+                  ? filteredVerticalLines
+                  : filteredHorizontalLines;
+              const isVertical = verticalLines.length > 0;
+
+              // Calculate object edges
+              const objectEdges = isVertical
+                ? {
+                    left: activeObjectBounds.left,
+                    right: activeObjectBounds.left + activeObjectBounds.width,
+                    center: activeObjectCenter.x,
+                    middleLeft: activeObjectMiddleLeft.x,
+                    middleRight: activeObjectMiddleRight.x,
+                    middleTop: activeObjectMiddleTop.y,
+                    middleBottom: activeObjectMiddleBottom.y,
+                  }
+                : {
+                    top: activeObjectBounds.top,
+                    bottom: activeObjectBounds.top + activeObjectBounds.height,
+                    center: activeObjectCenter.y,
+                    middleLeft: activeObjectMiddleLeft.x,
+                    middleRight: activeObjectMiddleRight.x,
+                    middleTop: activeObjectMiddleTop.y,
+                    middleBottom: activeObjectMiddleBottom.y,
+                  };
+
+              // Find the nearest line and its distance to each edge
+              let nearestLine = null;
+              let nearestEdge = null;
+              let minDistance = Infinity;
+
+              lines.forEach((line) => {
+                const lineValue = isVertical ? line.x : line.y;
+
+                // Check distance to each edge
+                Object.entries(objectEdges).forEach(([edge, value]) => {
+                  const distance = Math.abs(lineValue - value);
+                  if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestLine = line;
+                    nearestEdge = edge;
+                  }
+                });
+              });
+
+              if (nearestLine && nearestEdge) {
+                // For vertical lines
+                if (isVertical) {
+                  activeObject.setPositionByOrigin(
+                    new fabric.Point(nearestLine.x, activeObjectCenter.y),
+                    nearestEdge === "right"
+                      ? "right"
+                      : nearestEdge === "left"
+                      ? "left"
+                      : "center",
+                    "center"
+                  );
+                }
+                // For horizontal lines
+                else {
+                  activeObject.setPositionByOrigin(
+                    new fabric.Point(activeObjectCenter.x, nearestLine.y),
+                    "center",
+                    nearestEdge === "bottom"
+                      ? "bottom"
+                      : nearestEdge === "top"
+                      ? "top"
+                      : "center"
+                  );
+                }
+              }
+            }
+            // Case 2: Both types of lines exist - find intersection
+            else if (
+              filteredVerticalLines.length > 0 &&
+              filteredHorizontalLines.length > 0
+            ) {
+              if (intersectionPoints.length > 0) {
+                const intersectionPointsWithMiddle = [
+                  ...intersectionPoints,
+                  activeObjectMiddleLeft,
+                  activeObjectMiddleRight,
+                  activeObjectMiddleTop,
+                  activeObjectMiddleBottom,
+                ];
+                // Find clustered intersection points (within margin of 2)
+                const clusters = [];
+                const used = new Set();
+                const margin = 2;
+
+                intersectionPointsWithMiddle.forEach((point, index) => {
+                  if (used.has(index)) return;
+
+                  const cluster = [point];
+                  used.add(index);
+
+                  // Find other points within margin
+                  intersectionPointsWithMiddle.forEach(
+                    (otherPoint, otherIndex) => {
+                      if (otherIndex === index || used.has(otherIndex)) return;
+
+                      const xDiff = Math.abs(point.x - otherPoint.x);
+                      const yDiff = Math.abs(point.y - otherPoint.y);
+
+                      if (xDiff <= margin && yDiff <= margin) {
+                        cluster.push(otherPoint);
+                        used.add(otherIndex);
+                      }
+                    }
+                  );
+
+                  if (cluster.length > 1) {
+                    clusters.push(cluster);
+                  }
+                });
+
+                // If we found clusters, process them
+                if (clusters.length > 0) {
+                  console.log("Found clustered intersection points:", clusters);
+
+                  // Filter out canvas lines
+                  const filteredLines = [
+                    ...filteredVerticalLines,
+                    ...filteredHorizontalLines,
+                  ];
+
+                  // Find the cluster that's closest to any actual guideline
+                  let bestCluster = null;
+                  let minClusterDistance = Infinity;
+
+                  clusters.forEach((cluster) => {
+                    // For each cluster, find the minimum distance to any line
+                    let clusterMinDistance = Infinity;
+
+                    cluster.forEach((point) => {
+                      filteredLines.forEach((line) => {
+                        const lineValue =
+                          line.x !== undefined ? line.x : line.y;
+                        const pointValue =
+                          line.x !== undefined ? point.x : point.y;
+                        const distanceToLine = Math.abs(lineValue - pointValue);
+
+                        if (distanceToLine < clusterMinDistance) {
+                          clusterMinDistance = distanceToLine;
+                        }
+                      });
+                    });
+
+                    // If this cluster is closer to a line than previous clusters
+                    if (clusterMinDistance < minClusterDistance) {
+                      minClusterDistance = clusterMinDistance;
+                      bestCluster = cluster;
+                    }
+                  });
+
+                  if (bestCluster) {
+                    console.log("Best cluster selected:", bestCluster);
+
+                    // Get active object corners and middle points
+                    const activeObjectCorners = getObjectCorners(activeObject);
+                    const activeObjectPositions = [
+                      {
+                        corner: activeObjectCorners[0],
+                        origin: { x: "left", y: "top" },
+                      }, // top-left
+                      {
+                        corner: activeObjectMiddleLeft,
+                        origin: { x: "left", y: "center" },
+                      }, // middle-left
+                      {
+                        corner: activeObjectMiddleRight,
+                        origin: { x: "right", y: "center" },
+                      }, // middle-right
+                      {
+                        corner: activeObjectCorners[1],
+                        origin: { x: "right", y: "top" },
+                      }, // top-right
+                      {
+                        corner: activeObjectMiddleBottom,
+                        origin: { x: "center", y: "bottom" },
+                      }, // middle-bottom
+                      {
+                        corner: activeObjectCorners[2],
+                        origin: { x: "right", y: "bottom" },
+                      }, // bottom-right
+                      {
+                        corner: activeObjectMiddleTop,
+                        origin: { x: "center", y: "top" },
+                      }, // middle-top
+                      {
+                        corner: activeObjectCorners[3],
+                        origin: { x: "left", y: "bottom" },
+                      }, // bottom-left
+                      {
+                        corner: activeObjectCenter,
+                        origin: { x: "center", y: "center" },
+                      }, // center
+                    ];
+
+                    // Find the point in the best cluster that's closest to any corner
+                    let bestMatch = null;
+                    let minDistance = Infinity;
+
+                    bestCluster.forEach((point) => {
+                      activeObjectPositions.forEach(({ corner, origin }) => {
+                        const distance = Math.sqrt(
+                          Math.pow(point.x - corner.x, 2) +
+                            Math.pow(point.y - corner.y, 2)
+                        );
+
+                        if (distance < minDistance) {
+                          minDistance = distance;
+                          bestMatch = {
+                            point: point,
+                            origin: origin,
+                            cluster: bestCluster,
+                          };
+                        }
+                      });
+                    });
+
+                    if (bestMatch) {
+                      console.log("Best match found:", bestMatch);
+
+                      // Snap to the best matching intersection point
+                      activeObject.setPositionByOrigin(
+                        new fabric.Point(bestMatch.point.x, bestMatch.point.y),
+                        bestMatch.origin.x,
+                        bestMatch.origin.y
+                      );
+                    }
+                  }
+                } else {
+                  // No clusters found, use the first intersection point as fallback
+                  const intersection = intersectionPoints[0];
+
+                  activeObject.setPositionByOrigin(
+                    new fabric.Point(intersection.x, intersection.y),
+                    "center",
+                    "center"
+                  );
+                }
+              }
+            }
+
+            canvas.renderAll();
+          }
+        }
+
+        // Clear all guidelines
+        setVerticalLines([]);
+        setHorizontalLines([]);
+        setIntersectionPoints([]);
+      };
+
+      // Add event listeners
+      canvas.on("after:render", renderHandler);
+      canvas.on("mouse:up", mouseUpHandler);
+
+      // Cleanup function to remove event listeners
+      return () => {
+        canvas.off("after:render", renderHandler);
+        canvas.off("mouse:up", mouseUpHandler);
+      };
     }
-
-    ctx.restore();
-  };
-
-  const checkDistanceBelowThreshold = (point1, point2, threshold) => {
-    const deltaX = point2.x - point1.x;
-    const deltaY = point2.y - point1.y;
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-    return distance < threshold;
-  };
-
-  const findIntersections = (
+  }, [
+    canvas,
+    drawVerticalLine,
+    drawHorizontalLine,
+    drawXMarker,
     verticalLines,
     horizontalLines,
-    margin = 1,
-    extension = 50
-  ) => {
-    const intersections = [];
+    intersectionPoints,
+    getObjectCorners,
+  ]);
 
-    for (const vLine of verticalLines) {
-      for (const hLine of horizontalLines) {
-        // Extend vertical line's range
-        const extendedY1 = vLine.y1 - extension;
-        const extendedY2 = vLine.y2 + extension;
+  // Function to check if a point is on a line
+  const isPointOnLine = useCallback((point, line, threshold = 1) => {
+    if (line.x !== undefined) {
+      // Vertical line
+      return Math.abs(point.x - line.x) <= threshold;
+    } else if (line.y !== undefined) {
+      // Horizontal line
+      return Math.abs(point.y - line.y) <= threshold;
+    }
+    return false;
+  }, []);
 
-        // Extend horizontal line's range
-        const extendedX1 = hLine.x1 - extension;
-        const extendedX2 = hLine.x2 + extension;
+  // Update addIntersectionPoint to work with state
+  const addIntersectionPoint = useCallback((point) => {
+    setIntersectionPoints((prevPoints) => {
+      // Always add the point to the array for clustering logic
+      return [...prevPoints, point];
+    });
+  }, []);
 
-        // Check if the vertical line's x-coordinate is within the horizontal line's extended range, including margin
-        const xInRange =
-          vLine.x >= extendedX1 - margin && vLine.x <= extendedX2 + margin;
+  // Generic function to calculate nearest and farthest corners for alignment
+  const calculateAlignmentCorners = useCallback(
+    (
+      activeObject,
+      targetObject,
+      axis,
+      alignmentValue,
+      activeObjectCenter,
+      activeObjectBoundingRect,
+      targetObjectCenter,
+      targetObjectBoundingRect,
+      isCenter = false
+    ) => {
+      const activeObjectCorners = getObjectCorners(activeObject);
+      const targetObjectCorners = getObjectCorners(targetObject);
 
-        // Check if the horizontal line's y-coordinate is within the vertical line's extended range, including margin
-        const yInRange =
-          hLine.y >= extendedY1 - margin && hLine.y <= extendedY2 + margin;
+      // Extract the relevant coordinate based on axis (x for horizontal, y for vertical)
+      const coordinate = axis === "Y" ? "y" : "x";
 
-        if (xInRange && yInRange) {
-          // Intersection point with margin and extended lines
-          intersections.push({
-            x: vLine.x,
-            y: hLine.y,
-            centerLineX: vLine.centerLineX || hLine.centerLineX,
-            centerLineY: vLine.centerLineY || hLine.centerLineY,
+      const sortedActiveObjectCorners = activeObjectCorners
+        .map((corner) => corner[coordinate])
+        .sort((a, b) => a - b);
+      const sortedTargetObjectCorners = targetObjectCorners
+        .map((corner) => corner[coordinate])
+        .sort((a, b) => a - b);
+
+      // Get the center coordinate of the active object
+      const activeObjectCenterCoordinate =
+        activeObjectCenter[coordinate.toLowerCase()];
+
+      // Determine the position of active object center relative to target object
+      let position;
+      if (activeObjectCenterCoordinate < sortedTargetObjectCorners[0]) {
+        position = "before"; // Active object center is before the target object
+      } else if (
+        activeObjectCenterCoordinate >
+        sortedTargetObjectCorners[sortedTargetObjectCorners.length - 1]
+      ) {
+        position = "after"; // Active object center is after the target object
+      } else {
+        position = "inside"; // Active object center is inside the target object range
+      }
+
+      // Get target object center coordinate
+      const targetObjectCenterCoordinate =
+        targetObjectCenter[coordinate.toLowerCase()];
+
+      let activeObjectFarthestCorner, targetObjectFarthestCorner;
+      let activeObjectNearestCorner, targetObjectNearestCorner;
+
+      // Calculate farthest corner based on distance from target center
+      const activeObjectFarthestFromTarget = sortedActiveObjectCorners.reduce(
+        (farthest, current) => {
+          const currentDistance = Math.abs(
+            current - targetObjectCenterCoordinate
+          );
+          const farthestDistance = Math.abs(
+            farthest - targetObjectCenterCoordinate
+          );
+          return currentDistance > farthestDistance ? current : farthest;
+        }
+      );
+
+      // Calculate nearest corner based on distance from target center
+      const activeObjectNearestToTarget = sortedActiveObjectCorners.reduce(
+        (nearest, current) => {
+          const currentDistance = Math.abs(
+            current - targetObjectCenterCoordinate
+          );
+          const nearestDistance = Math.abs(
+            nearest - targetObjectCenterCoordinate
+          );
+          return currentDistance < nearestDistance ? current : nearest;
+        }
+      );
+
+      // Calculate target object's farthest and nearest corners relative to active object center
+      const targetObjectFarthestFromActive = sortedTargetObjectCorners.reduce(
+        (farthest, current) => {
+          const currentDistance = Math.abs(
+            current - activeObjectCenterCoordinate
+          );
+          const farthestDistance = Math.abs(
+            farthest - activeObjectCenterCoordinate
+          );
+          return currentDistance > farthestDistance ? current : farthest;
+        }
+      );
+
+      const targetObjectNearestToActive = sortedTargetObjectCorners.reduce(
+        (nearest, current) => {
+          const currentDistance = Math.abs(
+            current - activeObjectCenterCoordinate
+          );
+          const nearestDistance = Math.abs(
+            nearest - activeObjectCenterCoordinate
+          );
+          return currentDistance < nearestDistance ? current : nearest;
+        }
+      );
+
+      switch (position) {
+        case "before":
+        case "after":
+          // For non-overlapping cases, use the calculated farthest/nearest corners
+          activeObjectFarthestCorner = activeObjectFarthestFromTarget;
+          targetObjectFarthestCorner = targetObjectFarthestFromActive;
+          activeObjectNearestCorner = activeObjectNearestToTarget;
+          targetObjectNearestCorner = targetObjectNearestToActive;
+          break;
+
+        case "inside":
+          // Active object center is inside target object range
+          // For drawing guidelines, use the farthest corners for maximum visibility
+          activeObjectFarthestCorner = activeObjectFarthestFromTarget;
+          targetObjectFarthestCorner = targetObjectFarthestFromActive;
+
+          // For distance calculation, use the nearest edges
+          activeObjectNearestCorner = activeObjectNearestToTarget;
+          targetObjectNearestCorner = targetObjectNearestToActive;
+          break;
+      }
+
+      // Add intersection points (X markers) for the alignment
+      if (axis === "Y") {
+        // For vertical lines, add points at the target object's corners
+        const targetObjectHeight = _.round(
+          targetObjectBoundingRect.height /
+            (canvas.viewportZoom * canvas.scrollingZoom)
+        );
+
+        const cornerY1 = targetObjectCenter.y - targetObjectHeight / 2; // Top corner
+        const cornerY2 = targetObjectCenter.y + targetObjectHeight / 2; // Bottom corner
+
+        addIntersectionPoint({
+          x: alignmentValue,
+          y: cornerY1,
+        });
+
+        addIntersectionPoint({
+          x: alignmentValue,
+          y: cornerY2,
+        });
+
+        // If this is a center line, add intersection at active object's center
+        if (isCenter) {
+          addIntersectionPoint({
+            x: alignmentValue,
+            y: activeObjectCenter.y,
+          });
+        } else {
+          // Add X markers at the corners of the active object
+          const activeObjectHeight = _.round(
+            activeObjectBoundingRect.height /
+              (canvas.viewportZoom * canvas.scrollingZoom)
+          );
+
+          addIntersectionPoint({
+            x: alignmentValue,
+            y: activeObjectCenter.y + activeObjectHeight / 2,
+          });
+          addIntersectionPoint({
+            x: alignmentValue,
+            y: activeObjectCenter.y - activeObjectHeight / 2,
+          });
+        }
+      } else {
+        // For horizontal lines, add points at the target object's corners
+        const targetObjectWidth = _.round(
+          targetObjectBoundingRect.width /
+            (canvas.viewportZoom * canvas.scrollingZoom)
+        );
+
+        const cornerX1 = targetObjectCenter.x - targetObjectWidth / 2; // Left corner
+        const cornerX2 = targetObjectCenter.x + targetObjectWidth / 2; // Right corner
+
+        addIntersectionPoint({
+          x: cornerX1,
+          y: alignmentValue,
+        });
+
+        addIntersectionPoint({
+          x: cornerX2,
+          y: alignmentValue,
+        });
+
+        // If this is a center line, add intersection at active object's center
+        if (isCenter) {
+          addIntersectionPoint({
+            x: activeObjectCenter.x,
+            y: alignmentValue,
+          });
+        } else {
+          // Add X markers at the corners of the active object
+          const activeObjectWidth = _.round(
+            activeObjectBoundingRect.width /
+              (canvas.viewportZoom * canvas.scrollingZoom)
+          );
+
+          addIntersectionPoint({
+            x: activeObjectCenter.x + activeObjectWidth / 2,
+            y: alignmentValue,
+          });
+          addIntersectionPoint({
+            x: activeObjectCenter.x - activeObjectWidth / 2,
+            y: alignmentValue,
           });
         }
       }
-    }
-    if (intersections.length > 0) return intersections;
-    else return [{ x: verticalLines[0].x, y: horizontalLines[0].y }];
-  };
 
-  const getQuadrant = (center, point) => {
-    const isBelowThreshold = checkDistanceBelowThreshold(center, point, 2.5);
-    if (isBelowThreshold) {
-      return { x: "center", y: "center" };
-    } else if (point.x > center.x && point.y < center.y) {
-      return { x: "left", y: "bottom" };
-    } else if (point.x < center.x && point.y < center.y) {
-      return { x: "right", y: "bottom" };
-    } else if (point.x < center.x && point.y > center.y) {
-      return { x: "right", y: "top" };
-    } else if (point.x > center.x && point.y > center.y) {
-      return { x: "left", y: "top" };
-    } else {
-      if (point.y == center.y && point.x > center.x) {
-        return { x: "left", y: "center" };
-      } else if (point.y == center.y && point.x < center.x) {
-        return { x: "right", y: "center" };
-      } else if (point.x == center.x && point.y < center.y) {
-        return { x: "center", y: "bottom" };
-      } else if (point.x == center.x && point.y > center.y) {
-        return { x: "center", y: "top" };
-      }
-    }
-  };
+      return {
+        // For drawing the guidelines
+        activeObjectFarthestCorner,
+        targetObjectFarthestCorner,
+        // For calculating the distance
+        activeObjectNearestCorner,
+        targetObjectNearestCorner,
+        // Additional info about positioning
+        position,
+      };
+    },
+    [canvas, getObjectCorners, addIntersectionPoint]
+  );
 
-  const checkPosition = (
-    activeCenter,
-    activeSize,
-    objectCenter,
-    objectSize,
-    axis
-  ) => {
-    let condition;
-    let showText = true;
-    let point1, point2;
-    const conditions =
-      axis == "X"
-        ? [
-            "left",
-            "right",
-            "partial left inside",
-            "partial right inside",
-            "fully left inside",
-            "fully right inside",
-          ]
-        : [
-            "top",
-            "bottom",
-            "partial top inside",
-            "partial bottom inside",
-            "fully top inside",
-            "fully bottom inside",
-          ];
-    const halfActiveSize = _.round(activeSize / 2);
-    const halfObjectSize = _.round(objectSize / 2);
+  // Update updateLinesArray to work with state
+  const updateLinesArray = useCallback((linesArray, line, setLinesArray) => {
+    setLinesArray((prevLines) => {
+      const newLinesArray = [...prevLines];
 
-    if (activeCenter < objectCenter - halfObjectSize - halfActiveSize) {
-      // Active object is entirely to the left of the larger object
-      condition = conditions[0];
-    } else if (activeCenter > objectCenter + halfObjectSize + halfActiveSize) {
-      // Active object is entirely to the right of the larger object
-      condition = conditions[1];
-    } else if (activeCenter < objectCenter - halfObjectSize + halfActiveSize) {
-      // Active object is partially inside the larger object on the left side
-      condition = conditions[2];
-      showText = false;
-    } else if (activeCenter > objectCenter + halfObjectSize - halfActiveSize) {
-      // Active object is partially inside the larger object on the right side
-      condition = conditions[3];
-      showText = false;
-    } else {
-      // Active object is fully inside the larger object, determine closest side
-      if (activeCenter < objectCenter) {
-        // Active object is closer to the left side
-        condition = conditions[4];
+      // Check if a line with the same coordinates and alignmentType already exists
+      const existingIndex = newLinesArray.findIndex((existingLine) => {
+        // For vertical lines (have x property)
+        if (line.x !== undefined) {
+          return (
+            existingLine.x === line.x &&
+            existingLine.alignmentType === line.alignmentType &&
+            existingLine.calculations?.targetId === line.calculations?.targetId
+          );
+        }
+        // For horizontal lines (have y property)
+        else if (line.y !== undefined) {
+          return (
+            existingLine.y === line.y &&
+            existingLine.alignmentType === line.alignmentType &&
+            existingLine.calculations?.targetId === line.calculations?.targetId
+          );
+        }
+        return false;
+      });
+
+      if (existingIndex >= 0) {
+        // Update existing line
+        newLinesArray[existingIndex] = {
+          ...newLinesArray[existingIndex],
+          ...line,
+        };
       } else {
-        // Active object is closer to the right side
-        condition = conditions[5];
-      }
-    }
-    if (condition == "left" || condition == "top") {
-      point1 = activeCenter + halfActiveSize;
-      point2 = objectCenter - halfObjectSize;
-    } else if (condition == "right" || condition == "bottom") {
-      point1 = objectCenter + halfObjectSize;
-      point2 = activeCenter - halfActiveSize;
-    } else if (
-      condition == "partial left inside" ||
-      condition == "partial top inside"
-    ) {
-      point1 = activeCenter;
-      point2 = objectCenter;
-    } else if (
-      condition == "partial right inside" ||
-      condition == "partial bottom inside"
-    ) {
-      point1 = objectCenter;
-      point2 = activeCenter;
-    } else if (
-      condition == "fully left inside" ||
-      condition == "fully top inside"
-    ) {
-      point1 = objectCenter - halfObjectSize;
-      point2 = activeCenter - halfActiveSize;
-    } else if (
-      condition == "fully right inside" ||
-      condition == "fully bottom inside"
-    ) {
-      point1 = activeCenter + halfActiveSize;
-      point2 = objectCenter + halfObjectSize;
-    }
-    return { point1, point2, showText };
-  };
-
-  const updateLinesArray = (linesArray, line) => {
-    const keys = Object.keys(line);
-    let keyIndex = -1;
-    for (let existingLine of linesArray) {
-      if (
-        existingLine[keys[0]] == line[keys[0]] &&
-        existingLine[keys[1]] == line[keys[1]]
-      ) {
-        keyIndex = 2;
-        existingLine[keys[2]] = line[keys[2]];
-      } else if (
-        existingLine[keys[0]] == line[keys[0]] &&
-        existingLine[keys[2]] == line[keys[2]]
-      ) {
-        keyIndex = 1;
-        existingLine[keys[1]] = line[keys[1]];
-      } else if (
-        existingLine[keys[1]] == line[keys[1]] &&
-        existingLine[keys[2]] == line[keys[2]]
-      ) {
-        keyIndex = 0;
-        existingLine[keys[0]] = line[keys[0]];
-      }
-    }
-    const duplicate = linesArray.some(
-      (l) =>
-        (l[keys[keyIndex]] == line[keys[keyIndex]] &&
-          l[keys[1]] == line[keys[1]]) ||
-        (l[keys[keyIndex]] == line[keys[keyIndex]] &&
-          l[keys[2]] == line[keys[2]])
-    );
-    if (!duplicate) {
-      linesArray.push(line);
-    }
-  };
-
-  const movingGuidelines = (target, scaling) => {
-    const canvasObjects = canvas.getObjects();
-    const canv = {
-      id: "workarea",
-      evented: true,
-    };
-    canvasObjects.push(canv);
-    const activeObjectCenter = target.getCenterPoint();
-    const activeObjectCenterX = _.round(activeObjectCenter.x);
-    const activeObjectCenterY = _.round(activeObjectCenter.y);
-    const activeObjectBoundingRect = target.getBoundingRect();
-    const activeObjectHeight = _.round(
-      activeObjectBoundingRect.height /
-        (canvas.viewportZoom * canvas.scrollingZoom)
-    );
-    const activeObjectWidth = _.round(
-      activeObjectBoundingRect.width /
-        (canvas.viewportZoom * canvas.scrollingZoom)
-    );
-
-    const canvasWidth = _.round(canvas.width / canvas.viewportZoom);
-    const canvasHeight = _.round(canvas.height / canvas.viewportZoom);
-    let horizontalInTheRange = false;
-    let verticalInTheRange = false;
-    for (let i = canvasObjects.length; i--; ) {
-      if (
-        canvasObjects[i] === target ||
-        canvasObjects[i].superType === "port" ||
-        canvasObjects[i].superType === "link" ||
-        !canvasObjects[i].evented
-      ) {
-        continue;
+        // Add new line
+        newLinesArray.push(line);
       }
 
-      const objectCenter =
-        canvasObjects[i].id == "workarea"
-          ? { x: canvasWidth / 2, y: canvasHeight / 2 }
-          : canvasObjects[i].getCenterPoint();
-      const objectCenterX = _.round(objectCenter.x);
-      const objectCenterY = _.round(objectCenter.y);
-      const objectBoundingRect =
-        canvasObjects[i].id == "workarea"
-          ? {
-              height: canvasHeight * canvas.viewportTransform[3],
-              width: canvasWidth * canvas.viewportTransform[0],
-            }
-          : canvasObjects[i].getBoundingRect();
-      const objectHeight = _.round(
-        objectBoundingRect.height / (canvas.viewportZoom * canvas.scrollingZoom)
+      return newLinesArray;
+    });
+  }, []);
+
+  // Function to extend a line to find all intersections with object corners
+  const extendLineToCorners = useCallback(
+    (line, objects, activeObject) => {
+      // Skip if no line or it's a canvas line
+      if (!line || line.isCanvas) return;
+
+      objects.forEach((obj) => {
+        if (obj === activeObject || obj.id === "workarea") return;
+
+        const corners = getObjectCorners(obj);
+        corners.forEach((corner) => {
+          if (isPointOnLine(corner, line)) {
+            addIntersectionPoint(corner);
+          }
+        });
+      });
+    },
+    [getObjectCorners, isPointOnLine, addIntersectionPoint]
+  );
+
+  // Update movingGuidelines to use setState instead of .current
+  const movingGuidelines = useCallback(
+    (target, scaling) => {
+      const canvasObjects = canvas.getObjects();
+      const canv = {
+        id: "workarea",
+        evented: true,
+      };
+      canvasObjects.push(canv);
+      const activeObjectCenter = target.getCenterPoint();
+      const activeObjectCenterX = _.round(activeObjectCenter.x);
+      const activeObjectCenterY = _.round(activeObjectCenter.y);
+      const activeObjectBoundingRect = target.getBoundingRect();
+      const activeObjectHeight = _.round(
+        activeObjectBoundingRect.height /
+          (canvas.viewportZoom * canvas.scrollingZoom)
       );
-      const objectWidth = _.round(
-        objectBoundingRect.width / (canvas.viewportZoom * canvas.scrollingZoom)
+      const activeObjectWidth = _.round(
+        activeObjectBoundingRect.width /
+          (canvas.viewportZoom * canvas.scrollingZoom)
       );
 
-      // snap by the left edge
-      if (
-        isInRange(
-          objectCenterX - objectWidth / 2,
-          activeObjectCenterX - activeObjectWidth / 2
-        ) ||
-        isInRange(
-          objectCenterX - objectWidth / 2,
-          activeObjectCenterX + activeObjectWidth / 2
-        )
-      ) {
-        verticalInTheRange = true;
-        if (canvasObjects[i].id === "workarea") {
-          const line = {
-            x: 0,
-            y1: -2000,
-            y2: 2000,
-            show: false,
-          };
-          updateLinesArray(verticalLines, line);
-        } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterY,
-            activeObjectHeight,
-            objectCenterY,
-            objectHeight,
-            "Y"
-          );
-          const line = {
-            x: _.round(objectCenterX - objectWidth / 2),
-            y1: point1,
-            y2: point2,
-            show: showText,
-          };
-          updateLinesArray(verticalLines, line);
+      const canvasWidth = _.round(canvas.width / canvas.viewportZoom);
+      const canvasHeight = _.round(canvas.height / canvas.viewportZoom);
+      let horizontalInTheRange = false;
+      let verticalInTheRange = false;
+
+      // Clear previous intersection points
+      setIntersectionPoints([]);
+
+      for (let i = canvasObjects.length; i--; ) {
+        if (
+          canvasObjects[i] === target ||
+          canvasObjects[i].superType === "port" ||
+          canvasObjects[i].superType === "link" ||
+          !canvasObjects[i].evented
+        ) {
+          continue;
         }
-        const isLeft = isInRange(
-          objectCenterX - objectWidth / 2,
-          activeObjectCenterX - activeObjectWidth / 2
-        );
-        const left = isLeft ? "left" : "right";
-        target.setPositionByOrigin(
-          new fabric.Point(
-            canvasObjects[i].id === "workarea"
-              ? 0
-              : _.round(objectCenterX - objectWidth / 2),
-            activeObjectCenterY
-          ),
-          left,
-          "center"
-        );
-      }
 
-      // snap by the right edge
-      if (
-        isInRange(
-          objectCenterX + objectWidth / 2,
-          activeObjectCenterX - activeObjectWidth / 2
-        ) ||
-        isInRange(
-          objectCenterX + objectWidth / 2,
-          activeObjectCenterX + activeObjectWidth / 2
-        )
-      ) {
-        verticalInTheRange = true;
+        const objectCenter =
+          canvasObjects[i].id === "workarea"
+            ? { x: canvasWidth / 2, y: canvasHeight / 2 }
+            : canvasObjects[i].getCenterPoint();
+        const objectCenterX = _.round(objectCenter.x);
+        const objectCenterY = _.round(objectCenter.y);
+        const objectBoundingRect =
+          canvasObjects[i].id === "workarea"
+            ? {
+                height: canvasHeight * canvas.viewportTransform[3],
+                width: canvasWidth * canvas.viewportTransform[0],
+              }
+            : canvasObjects[i].getBoundingRect();
+        const objectHeight = _.round(
+          objectBoundingRect.height /
+            (canvas.viewportZoom * canvas.scrollingZoom)
+        );
+        const objectWidth = _.round(
+          objectBoundingRect.width /
+            (canvas.viewportZoom * canvas.scrollingZoom)
+        );
+
+        // Handle canvas (workarea) snapping
         if (canvasObjects[i].id === "workarea") {
-          const line = {
-            x: canvasWidth - 1,
-            y1: -2000,
-            y2: 2000,
-            show: false,
-          };
-          updateLinesArray(verticalLines, line);
+          // #endregion
+          // #region left edge of Canvas
+          // snap to left edge of canvas
+          if (isInRange(0, activeObjectCenterX - activeObjectWidth / 2)) {
+            verticalInTheRange = true;
+            const line = {
+              x: 0,
+              y1: -2000,
+              y2: 2000,
+              isCanvas: true,
+            };
+            updateLinesArray(verticalLines, line, setVerticalLines);
+
+            target.setPositionByOrigin(
+              new fabric.Point(0, activeObjectCenterY),
+              "left",
+              "center"
+            );
+          }
+          // #endregion
+
+          // #region right edge of Canvas
+          // snap to right edge of canvas
+          if (
+            isInRange(canvasWidth, activeObjectCenterX + activeObjectWidth / 2)
+          ) {
+            verticalInTheRange = true;
+            const line = {
+              x: canvasWidth - 1,
+              y1: -2000,
+              y2: 2000,
+              isCanvas: true,
+            };
+            updateLinesArray(verticalLines, line, setVerticalLines);
+
+            target.setPositionByOrigin(
+              new fabric.Point(canvasWidth, activeObjectCenterY),
+              "right",
+              "center"
+            );
+          }
+          // #endregion
+
+          // #region top edge of Canvas
+          // snap to top edge of canvas
+          if (isInRange(0, activeObjectCenterY - activeObjectHeight / 2)) {
+            horizontalInTheRange = true;
+            const line = {
+              y: 0,
+              x1: -2000,
+              x2: 2000,
+              isCanvas: true,
+            };
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+
+            target.setPositionByOrigin(
+              new fabric.Point(activeObjectCenterX, 0),
+              "center",
+              "top"
+            );
+          }
+          // #endregion
+
+          // #region bottom edge of Canvas
+          // snap to bottom edge of canvas
+          if (
+            isInRange(
+              canvasHeight,
+              activeObjectCenterY + activeObjectHeight / 2
+            )
+          ) {
+            horizontalInTheRange = true;
+            const line = {
+              y: objectHeight - 2,
+              x1: -2000,
+              x2: 2000,
+              isCanvas: true,
+            };
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+
+            target.setPositionByOrigin(
+              new fabric.Point(activeObjectCenterX, canvasHeight),
+              "center",
+              "bottom"
+            );
+          }
+          // #endregion
+
+          // #region vertical center of Canvas
+          // snap to vertical center line of canvas
+          if (isInRange(objectCenterX, activeObjectCenterX)) {
+            verticalInTheRange = true;
+            const line = {
+              x: canvasWidth / 2,
+              y1: -2000,
+              y2: 2000,
+              centerLineX: "x",
+              isCanvas: true,
+            };
+            addIntersectionPoint({
+              x: canvasWidth / 2,
+              y: activeObjectCenterY - activeObjectHeight / 2,
+            });
+            addIntersectionPoint({
+              x: canvasWidth / 2,
+              y: activeObjectCenterY + activeObjectHeight / 2,
+            });
+            updateLinesArray(verticalLines, line, setVerticalLines);
+
+            if (!scaling)
+              target.setPositionByOrigin(
+                new fabric.Point(objectCenterX, activeObjectCenterY),
+                "center",
+                "center"
+              );
+          }
+          // #endregion
+
+          // #region horizontal center of Canvas
+          // snap to horizontal center line of canvas
+          if (isInRange(objectCenterY, activeObjectCenterY)) {
+            horizontalInTheRange = true;
+            const line = {
+              y: canvasHeight / 2,
+              x1: -2000,
+              x2: 2000,
+              centerLineY: "y",
+              isCanvas: true,
+            };
+            addIntersectionPoint({
+              x: activeObjectCenterX - activeObjectWidth / 2,
+              y: canvasHeight / 2,
+            });
+            addIntersectionPoint({
+              x: activeObjectCenterX + activeObjectWidth / 2,
+              y: canvasHeight / 2,
+            });
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+
+            if (!scaling)
+              target.setPositionByOrigin(
+                new fabric.Point(activeObjectCenterX, objectCenterY),
+                "center",
+                "center"
+              );
+          }
+          // #endregion
         } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterY,
-            activeObjectHeight,
-            objectCenterY,
-            objectHeight,
-            "Y"
-          );
-          const line = {
-            x: _.round(objectCenterX + objectWidth / 2),
-            y1: point1,
-            y2: point2,
-            show: showText,
-          };
-          updateLinesArray(verticalLines, line);
+          // Show guidelines for other objects without snapping
+
+          // #region left edge guidelines
+          // left edge guidelines
+          if (
+            isInRange(
+              objectCenterX - objectWidth / 2,
+              activeObjectCenterX - activeObjectWidth / 2
+            ) ||
+            isInRange(
+              objectCenterX - objectWidth / 2,
+              activeObjectCenterX + activeObjectWidth / 2
+            )
+          ) {
+            verticalInTheRange = true;
+
+            // Use the generic function to calculate alignment corners
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "Y",
+              _.round(objectCenterX - objectWidth / 2),
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect
+            );
+
+            const sortDistances = [
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const y1 = sortDistances[0];
+            const y2 = sortDistances[3];
+            const line = {
+              x: _.round(objectCenterX - objectWidth / 2),
+              y1: y1,
+              y2: y2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "Y",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "left",
+            };
+            updateLinesArray(verticalLines, line, setVerticalLines);
+          }
+          // #endregion
+
+          // #region right edge guidelines
+          // right edge guidelines
+          if (
+            isInRange(
+              objectCenterX + objectWidth / 2,
+              activeObjectCenterX - activeObjectWidth / 2
+            ) ||
+            isInRange(
+              objectCenterX + objectWidth / 2,
+              activeObjectCenterX + activeObjectWidth / 2
+            )
+          ) {
+            verticalInTheRange = true;
+
+            // Use the generic function to calculate alignment corners
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "Y",
+              _.round(objectCenterX + objectWidth / 2),
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect
+            );
+
+            const sortDistances = [
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const y1 = sortDistances[0];
+            const y2 = sortDistances[3];
+
+            const line = {
+              x: _.round(objectCenterX + objectWidth / 2),
+              y1: y1,
+              y2: y2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "Y",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "right",
+            };
+            updateLinesArray(verticalLines, line, setVerticalLines);
+          }
+          // #endregion
+
+          // #region top edge guidelines
+          // top edge guidelines
+          if (
+            isInRange(
+              objectCenterY - objectHeight / 2,
+              activeObjectCenterY - activeObjectHeight / 2
+            ) ||
+            isInRange(
+              objectCenterY - objectHeight / 2,
+              activeObjectCenterY + activeObjectHeight / 2
+            )
+          ) {
+            horizontalInTheRange = true;
+
+            // Use the generic function to calculate alignment corners
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "X",
+              _.round(objectCenterY - objectHeight / 2),
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect
+            );
+
+            const sortDistances = [
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const x1 = sortDistances[0];
+            const x2 = sortDistances[3];
+
+            const line = {
+              y: _.round(objectCenterY - objectHeight / 2),
+              x1: x1,
+              x2: x2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "X",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "top",
+            };
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+          }
+          // #endregion
+
+          // #region bottom edge guidelines
+          // bottom edge guidelines
+          if (
+            isInRange(
+              objectCenterY + objectHeight / 2,
+              activeObjectCenterY + activeObjectHeight / 2
+            ) ||
+            isInRange(
+              objectCenterY + objectHeight / 2,
+              activeObjectCenterY - activeObjectHeight / 2
+            )
+          ) {
+            horizontalInTheRange = true;
+
+            // Use the generic function to calculate alignment corners
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "X",
+              _.round(objectCenterY + objectHeight / 2),
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect
+            );
+
+            const sortDistances = [
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const x1 = sortDistances[0];
+            const x2 = sortDistances[3];
+
+            const line = {
+              y: _.round(objectCenterY + objectHeight / 2),
+              x1: x1,
+              x2: x2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "X",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "bottom",
+            };
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+          }
+          // #endregion
+
+          // #region horizontal center guidelines
+          // horizontal center line guidelines
+          if (isInRange(objectCenterX, activeObjectCenterX)) {
+            verticalInTheRange = true;
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "Y",
+              objectCenterX,
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect,
+              true // This is a center line
+            );
+            const sortDistances = [
+              activeObjectCenterY,
+              targetObjectFarthestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const y1 = sortDistances[0];
+            const y2 = sortDistances[2];
+            const line = {
+              x: objectCenterX,
+              y1: y1,
+              y2: y2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "Y",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "center",
+            };
+            updateLinesArray(verticalLines, line, setVerticalLines);
+          }
+          // #endregion
+
+          // #region vertical center guidelines
+          // vertical center line guidelines
+          if (isInRange(objectCenterY, activeObjectCenterY)) {
+            horizontalInTheRange = true;
+            const {
+              activeObjectFarthestCorner,
+              targetObjectFarthestCorner,
+              activeObjectNearestCorner,
+              targetObjectNearestCorner,
+            } = calculateAlignmentCorners(
+              target,
+              canvasObjects[i],
+              "X",
+              objectCenterY,
+              activeObjectCenter,
+              activeObjectBoundingRect,
+              objectCenter,
+              objectBoundingRect,
+              true // This is a center line
+            );
+            const sortDistances = [
+              activeObjectCenterX,
+              targetObjectFarthestCorner,
+              targetObjectNearestCorner,
+            ];
+            sortDistances.sort((a, b) => a - b);
+            const x1 = sortDistances[0];
+            const x2 = sortDistances[2];
+            const line = {
+              y: objectCenterY,
+              x1: x1,
+              x2: x2,
+              calculations: {
+                calculationCorner1: activeObjectNearestCorner,
+                calculationCorner2: targetObjectNearestCorner,
+                axis: "X",
+                targetId: canvasObjects[i].id || `obj_${i}`, // Add targetId
+              },
+              alignmentType: "center",
+            };
+            updateLinesArray(horizontalLines, line, setHorizontalLines);
+          }
+          // #endregion
         }
-        const isRight = isInRange(
-          objectCenterX + objectWidth / 2,
-          activeObjectCenterX + activeObjectWidth / 2
-        );
-        const right = isRight ? "right" : "left";
-        target.setPositionByOrigin(
-          new fabric.Point(
-            canvasObjects[i].id === "workarea"
-              ? canvasWidth
-              : _.round(objectCenterX + objectWidth / 2),
-            activeObjectCenterY
-          ),
-          right,
-          "center"
-        );
       }
 
-      // snap by the top edge
-      if (
-        isInRange(
-          objectCenterY - objectHeight / 2,
-          activeObjectCenterY - activeObjectHeight / 2
-        ) ||
-        isInRange(
-          objectCenterY - objectHeight / 2,
-          activeObjectCenterY + activeObjectHeight / 2
-        )
-      ) {
-        horizontalInTheRange = true;
-        if (canvasObjects[i].id === "workarea") {
-          const line = {
-            y: 0,
-            x1: -2000,
-            x2: 2000,
-            show: false,
-          };
-          updateLinesArray(horizontalLines, line);
-        } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterX,
-            activeObjectWidth,
-            objectCenterX,
-            objectWidth,
-            "X"
-          );
-          const line = {
-            y: _.round(objectCenterY - objectHeight / 2),
-            x1: point1,
-            x2: point2,
-            show: showText,
-          };
-          updateLinesArray(horizontalLines, line);
-        }
-        const isTop = isInRange(
-          objectCenterY - objectHeight / 2,
-          activeObjectCenterY - activeObjectHeight / 2
-        );
-        const top = isTop ? "top" : "bottom";
-        target.setPositionByOrigin(
-          new fabric.Point(
-            activeObjectCenterX,
-            canvasObjects[i].id === "workarea"
-              ? 0
-              : objectCenterY - objectHeight / 2
-          ),
-          "center",
-          top
-        );
+      // Extend lines to find all intersections with object corners
+      verticalLines.forEach((line) =>
+        extendLineToCorners(line, canvasObjects, target)
+      );
+      horizontalLines.forEach((line) =>
+        extendLineToCorners(line, canvasObjects, target)
+      );
+
+      if (!horizontalInTheRange) {
+        setHorizontalLines([]);
       }
 
-      // snap by the bottom edge
-      if (
-        isInRange(
-          objectCenterY + objectHeight / 2,
-          activeObjectCenterY + activeObjectHeight / 2
-        ) ||
-        isInRange(
-          objectCenterY + objectHeight / 2,
-          activeObjectCenterY - activeObjectHeight / 2
-        )
-      ) {
-        horizontalInTheRange = true;
-        if (canvasObjects[i].id === "workarea") {
-          const line = {
-            y: objectHeight - 2,
-            x1: -2000,
-            x2: 2000,
-            show: false,
-          };
-          updateLinesArray(horizontalLines, line);
-        } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterX,
-            activeObjectWidth,
-            objectCenterX,
-            objectWidth,
-            "X"
-          );
-          const line = {
-            y: _.round(objectCenterY + objectHeight / 2),
-            x1: point1,
-            x2: point2,
-            show: showText,
-          };
-          updateLinesArray(horizontalLines, line);
-        }
-        const isBottom = isInRange(
-          objectCenterY + objectHeight / 2,
-          activeObjectCenterY + activeObjectHeight / 2
-        );
-        const bottom = isBottom ? "bottom" : "top";
-        target.setPositionByOrigin(
-          new fabric.Point(
-            activeObjectCenterX,
-            canvasObjects[i].id === "workarea"
-              ? canvasHeight
-              : _.round(objectCenterY + objectHeight / 2)
-          ),
-
-          "center",
-          bottom
-        );
+      if (!verticalInTheRange) {
+        setVerticalLines([]);
       }
-
-      // snap by the horizontal center line
-      if (isInRange(objectCenterX, activeObjectCenterX)) {
-        verticalInTheRange = true;
-        if (canvasObjects[i].id === "workarea") {
-          const line = {
-            x: canvasWidth / 2,
-            y1: -2000,
-            y2: 2000,
-            show: false,
-            centerLineX: "x",
-          };
-          updateLinesArray(verticalLines, line);
-        } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterY,
-            activeObjectHeight,
-            objectCenterY,
-            objectHeight,
-            "Y"
-          );
-          const line = {
-            x: objectCenterX,
-            y1: point1,
-            y2: point2,
-            show: showText,
-          };
-          updateLinesArray(verticalLines, line);
-        }
-        if (!scaling)
-          target.setPositionByOrigin(
-            new fabric.Point(objectCenterX, activeObjectCenterY),
-            "center",
-            "center"
-          );
-      }
-
-      // snap by the vertical center line
-      if (isInRange(objectCenterY, activeObjectCenterY)) {
-        horizontalInTheRange = true;
-        if (canvasObjects[i].id === "workarea") {
-          const line = {
-            y: canvasHeight / 2,
-            x1: -2000,
-            x2: 2000,
-            show: false,
-            centerLineY: "y",
-          };
-          updateLinesArray(horizontalLines, line);
-        } else {
-          const { point1, point2, showText } = checkPosition(
-            activeObjectCenterX,
-            activeObjectWidth,
-            objectCenterX,
-            objectWidth,
-            "X"
-          );
-          const line = {
-            y: objectCenterY,
-            x1: point1,
-            x2: point2,
-            show: showText,
-          };
-          updateLinesArray(horizontalLines, line);
-        }
-        if (!scaling)
-          target.setPositionByOrigin(
-            new fabric.Point(activeObjectCenterX, objectCenterY),
-            "center",
-            "center"
-          );
-      }
-    }
-
-    if (horizontalInTheRange && verticalInTheRange && !scaling) {
-      if (isInRange(target.height, canvasHeight)) {
-        target.setPositionByOrigin(
-          new fabric.Point(activeObjectCenterX, canvasHeight / 2),
-          "center",
-          "center"
-        );
-      } else if (isInRange(target.width, canvasWidth)) {
-        target.setPositionByOrigin(
-          new fabric.Point(canvasWidth / 2, activeObjectCenterY),
-          "center",
-          "center"
-        );
-      } else {
-        const intersections = findIntersections(
-          verticalLines,
-          horizontalLines,
-          1,
-          Math.max(activeObjectHeight, activeObjectWidth)
-        );
-        const { x, y } = getQuadrant(
-          {
-            x: intersections[0].x,
-            y: intersections[0].y,
-          },
-          { x: target.getCenterPoint().x, y: target.getCenterPoint().y }
-        );
-        target.setPositionByOrigin(
-          new fabric.Point(intersections[0].x, intersections[0].y),
-          intersections[0].centerLineX == "x" ? "center" : x,
-          intersections[0].centerLineY == "y" ? "center" : y
-        );
-      }
-    }
-    if (!horizontalInTheRange) {
-      horizontalLines.length = 0;
-    }
-
-    if (!verticalInTheRange) {
-      verticalLines.length = 0;
-    }
-  };
+    },
+    [canvas, isInRange, calculateAlignmentCorners, updateLinesArray]
+  );
 
   return {
     movingGuidelines,

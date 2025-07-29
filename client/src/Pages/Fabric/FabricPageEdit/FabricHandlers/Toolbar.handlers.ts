@@ -5,7 +5,7 @@ import { createSnapshotOfElement } from "../FabricComponents/CustomElementsHelpe
 import CustomItemsPicker from "../FabricItemsSchema/CustomItemsPicker";
 import { fabricPageActions } from "../../FabricPageRedAct";
 import useDrawingHandlers from "./oldLinehandler";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 const createDeleteIconImage = (value) => {
   let deleteIcon =
@@ -18,11 +18,11 @@ const createDeleteIconImage = (value) => {
   return img;
 };
 export const initializeShapes = (element, handleStartDrawing, dispatch) => {
-  if (element == "Line") {
+  if (element === "Line") {
     handleStartDrawing(true, "Line");
     dispatch(fabricPageActions.setActiveLine(null));
     dispatch(fabricPageActions.setPointArray([]));
-  } else if (element == "polygon") {
+  } else if (element === "polygon") {
     handleStartDrawing(true, "polygon");
     dispatch(fabricPageActions.setActiveLine(null));
     dispatch(fabricPageActions.setActiveShape(null));
@@ -57,7 +57,13 @@ const convertTriggersToSchema = (dataArray = []) => {
   return updatedDataArray;
 };
 
-const createContentArray = (text, styles) => {
+const createContentArray = (
+  text,
+  styles,
+  canvasDimension,
+  screenDimension,
+  toDesign
+) => {
   const content = [];
 
   let currentPosition = 0;
@@ -76,6 +82,15 @@ const createContentArray = (text, styles) => {
   for (const style of styles) {
     const { start, end, style: textStyle } = style;
     const { type, ...restTextStyle } = textStyle;
+
+    // find the font size of the text style
+    const convertedFontSize = convertToFontSize(
+      canvasDimension,
+      screenDimension,
+      textStyle.fontSize,
+      toDesign
+    );
+    restTextStyle.fontSize = convertedFontSize;
 
     // Convert logical start and end to actual positions in text
     const actualStart = indexMapping[start];
@@ -191,7 +206,7 @@ const canvasToDesign = (arr, screenDimension, canvasDimension) => {
     delete modifiedObj.scaleY;
     delete modifiedObj.rx;
     delete modifiedObj.ry;
-    if (type == "IText") {
+    if (type === "IText") {
       delete modifiedObj.overline;
       delete modifiedObj.linethrough;
       delete modifiedObj.lineHeight;
@@ -206,7 +221,13 @@ const canvasToDesign = (arr, screenDimension, canvasDimension) => {
       delete modifiedObj.pathAlign;
       delete modifiedObj.fill;
       modifiedObj.settings = {
-        content: createContentArray(modifiedObj.text, modifiedObj.styles),
+        content: createContentArray(
+          modifiedObj.text,
+          modifiedObj.styles,
+          canvasDimension,
+          screenDimension,
+          true
+        ),
         fontFamily: modifiedObj.fontFamily,
         text: modifiedObj.text,
         fontStyle: modifiedObj.fontStyle,
@@ -242,7 +263,7 @@ const canvasToDesign = (arr, screenDimension, canvasDimension) => {
       };
       delete modifiedObj.objects;
     }
-    if (type == "Line") {
+    if (type === "Line") {
       if (modifiedObj.y1 * modifiedObj.x1 <= 0 && modifiedObj.x1 <= 0) {
         modifiedObj.startingPoint = "bottomLeft";
       } else {
@@ -253,27 +274,27 @@ const canvasToDesign = (arr, screenDimension, canvasDimension) => {
       delete modifiedObj.x2;
       delete modifiedObj.y2;
     }
-    if (type == "Weather") {
+    if (type === "Weather") {
       modifiedObj.fill = modifiedObj.objects[0].fill;
       modifiedObj.stroke = modifiedObj.objects[0].stroke;
       modifiedObj.strokeWidth = modifiedObj.objects[0].strokeWidth;
       delete modifiedObj.objects;
       delete modifiedObj.src;
     }
-    if (type == "QRCode") {
+    if (type === "QRCode") {
       delete modifiedObj.objects;
       delete modifiedObj.src;
       delete modifiedObj.fill;
       delete modifiedObj.stroke;
       delete modifiedObj.strokeWidth;
     }
-    if (type == "RSSFeed") {
+    if (type === "RSSFeed") {
       delete modifiedObj.objects;
       delete modifiedObj.fill;
       delete modifiedObj.stroke;
       delete modifiedObj.strokeWidth;
     }
-    if (type == "Button") {
+    if (type === "Button") {
       modifiedObj.triggers = convertTriggersToSchema(modifiedObj.triggers);
     }
 
@@ -327,7 +348,7 @@ export const addElement = (element, position, canvas, multiplier) => {
       left: position.left,
       top: position.top,
     };
-  if (element == "Multimedia") {
+  if (element === "Multimedia") {
     object = new fabric.Rect({
       ...objectOptions,
       fill: "#FFFFFFFF",
@@ -335,10 +356,15 @@ export const addElement = (element, position, canvas, multiplier) => {
       strokeWidth: 1,
       path: "",
     });
-  } else if (element == "IText") {
+  } else if (element === "IText") {
     object = new fabric.Textbox("Text", objectOptions);
     const { deleteControl, ...controls } = object.controls;
     object.controls = controls;
+
+    // Apply initial fontSize to each character individually
+    const fontSize = 64 * multiplier;
+    const text = object.text;
+    object.setSelectionStyles({ fontSize: fontSize }, 0, text.length);
   } else {
     object = new fabric[element](objectOptions);
     const { deleteControl, ...controls } = object.controls;
@@ -351,16 +377,16 @@ export const addElement = (element, position, canvas, multiplier) => {
 
 export const addCustomObject = (type, canvas, resolution, position?: any) => {
   let size = { width: 128, height: 128 };
-  if (type == "Weather") {
+  if (type === "Weather") {
     size = { width: 289.578125, height: 252.5390625 };
-  } else if (type == "RSSFeed") {
+  } else if (type === "RSSFeed") {
     size = {
       width: canvas.width / canvas.viewportZoom,
       height: (50 * canvas.height) / resolution.height,
     };
-  } else if (type == "Button") {
+  } else if (type === "Button") {
     size = { width: 280.15, height: 86.2 };
-  } else if (type == "Embed") {
+  } else if (type === "Embed") {
     size = { width: 300, height: 150 };
   }
   if (position) {
@@ -417,7 +443,7 @@ const calculateFabricObjectAreasAndHideImage = (
       imageElement.style.display = "block";
     }
   }
-  if (fabricObjects.length == 0) imageElement.style.display = "block";
+  if (fabricObjects.length === 0) imageElement.style.display = "block";
   if (canvas.scrollingZoom > 1) imageElement.style.display = "none";
 };
 
@@ -425,7 +451,7 @@ export const addMediaArea = (dimensions, canvas, layoutIndex) => {
   //First remove all existing addMediaArea objects
   const objects = canvas.getObjects();
   for (let i = objects.length - 1; i >= 0; i--) {
-    if (objects[i].type == "addMediaArea") {
+    if (objects[i].type === "addMediaArea") {
       canvas.remove(objects[i]);
     }
   }
@@ -540,7 +566,7 @@ export const createSplitAreas = (index, canvas) => {
   const halfWidth = canvasWidth / 2;
   const halfHeight = canvasHeight / 2;
   let dimensions = [];
-  if (index == 1) {
+  if (index === 1) {
     // Create the first rectangle (left half)
     const area1 = {
       left: 0,
@@ -558,7 +584,7 @@ export const createSplitAreas = (index, canvas) => {
     };
 
     dimensions = [area1, area2];
-  } else if (index == 3) {
+  } else if (index === 3) {
     // Create the first rectangle (top-left)
     const area1 = {
       left: 0,
@@ -592,7 +618,7 @@ export const createSplitAreas = (index, canvas) => {
     };
 
     dimensions = [area1, area2, area3, area4];
-  } else if (index == 2) {
+  } else if (index === 2) {
     // Create the first rectangle (top half)
     const area1 = {
       left: 0,
@@ -681,7 +707,7 @@ const useToolbarHandlers = ({
     );
     const updatedScreens = selectedDesign.Configuration.screens.map(
       (screen, i) => {
-        if (i == screenIndex) return newDesignConfiguration;
+        if (i === screenIndex) return newDesignConfiguration;
         else return screen;
       }
     );
@@ -729,24 +755,24 @@ const useToolbarHandlers = ({
     const multiplier =
       canvas.width /
       selectedDesign.Configuration.screens[screenIndex].resolution.width;
-    if (id == "Elements") {
+    if (id === "Elements") {
       const objectTypes = ["Triangle", "Rect", "Ellipse", "IText", "Line"];
-      if (itemNo == 4) {
+      if (itemNo === 4) {
         initializeShapes("Line", handleStartDrawing, dispatch);
       } else if (objectTypes[itemNo]) {
         addElement(objectTypes[itemNo], null, canvas, multiplier);
       }
-    } else if (id == "Widgets") {
+    } else if (id === "Widgets") {
       const widgets = ["Button", "Weather", "RSSFeed", "QRCode", "Embed"];
       addCustomObject(
         widgets[itemNo],
         canvas,
         selectedDesign.Configuration.screens[screenIndex].resolution
       );
-    } else if (id == "Pointer") {
+    } else if (id === "Pointer") {
       canvas.discardActiveObject();
       setCursorState((prevState) => {
-        if (prevState == "pointer" && itemNo == 1) {
+        if (prevState === "pointer" && itemNo === 1) {
           canvas.set("selection", false);
           canvas.set("hoverCursor", "move");
           canvas.forEachObject((obj) => {
@@ -754,7 +780,7 @@ const useToolbarHandlers = ({
           });
           canvas.renderAll(); // Render canvas to reflect changes
           return "grab";
-        } else if (prevState == "grab" && itemNo == 0) {
+        } else if (prevState === "grab" && itemNo === 0) {
           canvas.set("selection", true);
           canvas.set("hoverCursor", "pointer");
           canvas.forEachObject((obj) => {
@@ -777,7 +803,7 @@ const useToolbarHandlers = ({
   const handleSelectObject = (object) => {
     const objectsSameType = canvas.getObjects(object.type);
     objectsSameType.forEach((obj) => {
-      if (obj.id == object.id) {
+      if (obj.id === object.id) {
         canvas.discardActiveObject();
         canvas.setActiveObject(obj);
         setSelectedObject(obj);

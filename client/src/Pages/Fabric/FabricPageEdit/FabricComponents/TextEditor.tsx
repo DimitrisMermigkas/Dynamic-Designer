@@ -18,6 +18,7 @@ import DynamicText from "./DynamicText";
 import TextfieldSelector from "../../../../components/Select/TextfieldSelector";
 import { Grid2 } from "@mui/material";
 import { useTranslation } from "../../translationUtils";
+import { fontFamilyOptions } from "../FabricHandlers/FontUtils";
 
 const useStyles = makeStyles()((theme) => ({
   formControl: {
@@ -73,14 +74,15 @@ const TextEditor = ({
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
 
-    const activeTxtObj = canvas.getActiveObject();
+    // const activeTxtObj = canvas.getActiveObject();
     const widthRatio = resolution.width / canvasWidth;
     const heightRatio = resolution.height / canvasHeight;
 
     // Use the average of width and height ratios to maintain aspect ratio
     const averageRatio =
       Math.min(widthRatio, heightRatio) * canvas.viewportZoom;
-    setTextSize(`${Math.round(activeTxtObj.fontSize * averageRatio)}`);
+    const updatedTextSize = Math.round(fontSize * averageRatio);
+    setTextSize(updatedTextSize);
   }, [fontSize]);
 
   const addDynamicWord = (value) => {
@@ -132,29 +134,6 @@ const TextEditor = ({
     addDynamicText(value, null);
   };
 
-  const fontFamilyOptions = [
-    { label: "Oswald", value: "Oswald" },
-    { label: "Bebas Neue", value: "Bebas Neue" },
-    { label: "Anton", value: "Anton" },
-    { label: "Montserrat", value: "Montserrat" },
-    { label: "Lobster", value: "Lobster" },
-    { label: "Pacifico", value: "Pacifico" },
-    { label: "Playfair Display", value: "Playfair Display" },
-    { label: "Abril Fatface", value: "Abril Fatface" },
-    { label: "Bangers", value: "Bangers" },
-    { label: "Fredoka One", value: "Fredoka One" },
-    { label: "Raleway", value: "Raleway" },
-    { label: "Archivo Black", value: "Archivo Black" },
-    { label: "Luckiest Guy", value: "Luckiest Guy" },
-    { label: "Dancing Script", value: "Dancing Script" },
-    { label: "Permanent Marker", value: "Permanent Marker" },
-    { label: "Rubik", value: "Rubik" },
-    { label: "Josefin Sans", value: "Josefin Sans" },
-    { label: "Merriweather", value: "Merriweather" },
-    { label: "Poppins", value: "Poppins" },
-    { label: "Exo 2", value: "Exo 2" },
-  ];
-
   const fontSizeOptions = [
     { label: "10", value: 10 },
     { label: "11", value: 11 },
@@ -170,6 +149,7 @@ const TextEditor = ({
     { label: "40", value: 40 },
     { label: "48", value: 48 },
     { label: "64", value: 64 },
+    { label: "72", value: 72 },
     { label: "80", value: 80 },
     { label: "96", value: 96 },
     { label: "128", value: 128 },
@@ -177,26 +157,40 @@ const TextEditor = ({
   const { classes } = useStyles();
   return (
     <Grid2 container style={{ display: "flex" }} size={12}>
-      <Grid2 size={12}>
-        <FormControl variant="outlined" className={classes.formControl}>
-          <InputLabel id="font-family-select-label">
-            {t("DesignerTranslations.t.fontFamily")}
-          </InputLabel>
-          <Select
-            variant="outlined"
-            labelId="font-family-select-label"
-            id="font-family-select"
+      <Grid2 size={12} style={{ display: "flex" }}>
+        <FormControl
+          variant="outlined"
+          className={classes.formControl}
+          style={{ width: "100%" }}
+        >
+          <TextfieldSelector
+            importFonts={true}
+            freeSolo={true}
             value={fontFamily}
-            onChange={(e) => onFontFamilyChange(e.target.value)}
-            label="Font Family"
-          >
-            {fontFamilyOptions.map((font) => {
-              return <MenuItem value={font.value}>{font.label}</MenuItem>;
-            })}
-          </Select>
+            options={fontFamilyOptions}
+            label={t("DesignerTranslations.t.fontFamily")}
+            type="string"
+            onChange={onFontFamilyChange}
+            textfieldProps={{
+              sx: {
+                "& .MuiInputBase-root": {
+                  fontFamily: fontFamily,
+                },
+              },
+            }}
+            renderOption={(props, option) => {
+              return (
+                <li {...props} key={option.value}>
+                  <span style={{ fontFamily: option.value as string }}>
+                    {option.label}
+                  </span>
+                </li>
+              );
+            }}
+          />
         </FormControl>
       </Grid2>
-      <Grid2 size={12}>
+      <Grid2 size={12} style={{ display: "flex" }}>
         <FormControl variant="outlined" className={classes.formControl}>
           <TextfieldSelector
             freeSolo={true}
@@ -208,7 +202,7 @@ const TextEditor = ({
           />
         </FormControl>
       </Grid2>
-      <Grid2 size={12}>
+      <Grid2 size={12} style={{ display: "flex" }}>
         <ButtonGroup
           color="primary"
           aria-label="text editor text decoration buttons"
@@ -234,7 +228,7 @@ const TextEditor = ({
           </Button>
         </ButtonGroup>
       </Grid2>
-      <Grid2 size={12}>
+      <Grid2 size={12} style={{ display: "flex" }}>
         <ButtonGroup
           color="primary"
           aria-label="text editor text alignment buttons"

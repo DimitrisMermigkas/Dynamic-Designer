@@ -103,8 +103,7 @@ const generateClasses = ({
     background-color: ${tickerColor};
   `,
   container: css`
-    display: grid;
-    grid-template-columns: 20% 80%;
+    display: flex;
     width: calc(100% - 1px);
     height: 100%;
     overflow: hidden;
@@ -112,10 +111,12 @@ const generateClasses = ({
   heading: css`
     margin: 8px;
     display: flex;
+    flex: 0 0 20%;
     align-items: center;
     justify-content: space-evenly;
   `,
   newsTicker: css`
+    flex: 0 0 81%;
     overflow: hidden;
     margin: 1px;
     border-radius: 6px;

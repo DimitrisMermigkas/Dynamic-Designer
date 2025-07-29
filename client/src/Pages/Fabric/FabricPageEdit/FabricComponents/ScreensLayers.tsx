@@ -208,7 +208,7 @@ const ScreensLayers = ({
     let updatedScreens = selectedDesign.Configuration.screens.filter(
       (screen, idx) => idx !== index
     );
-    if (updatedScreens.length == 0) {
+    if (updatedScreens.length === 0) {
       updatedScreens = [
         {
           name: "Screen-1",
@@ -246,7 +246,7 @@ const ScreensLayers = ({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div
         style={{
           display: "flex",
@@ -286,6 +286,7 @@ const ScreensLayers = ({
           flexDirection: "column",
           alignItems: "center",
           rowGap: theme.spacing(0.5),
+          height: "100%",
         }}
       >
         {!switchToObjects ? (
@@ -294,7 +295,7 @@ const ScreensLayers = ({
               key={index}
               classes={{ root: classes.buttonRoot }}
               style={{
-                background: index == screenIndex ? "#4A5878" : "#232429",
+                background: index === screenIndex ? "#4A5878" : "#232429",
               }}
               onClick={() => handleClick(index)}
             >
@@ -326,7 +327,14 @@ const ScreensLayers = ({
             </Button>
           ))
         ) : (
-          <List style={{ padding: 0, width: "100%" }}>
+          <List
+            style={{
+              padding: 0,
+              width: "100%",
+              height: "100%",
+              overflow: "auto",
+            }}
+          >
             {reverseArray.map((object, index) => {
               return (
                 <ListRow

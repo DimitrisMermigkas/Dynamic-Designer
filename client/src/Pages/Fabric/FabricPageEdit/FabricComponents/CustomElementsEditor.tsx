@@ -92,8 +92,8 @@ const renderDynamicDeviceDetails = (
   t
 ) => {
   return (
-    index == 3 &&
-    selectedObject.type == "QRCode" && (
+    index === 3 &&
+    selectedObject.type === "QRCode" && (
       <Grid2 size={10}>
         <div
           style={{
@@ -102,42 +102,43 @@ const renderDynamicDeviceDetails = (
             rowGap: "10px",
           }}
         >
-          {settings.dynamicValue && settings.dynamicValue == "DeviceDetail" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                rowGap: "8px",
-              }}
-            >
+          {settings.dynamicValue &&
+            settings.dynamicValue === "DeviceDetail" && (
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "flex-start",
+                  flexDirection: "column",
+                  rowGap: "8px",
                 }}
               >
-                <div style={{ display: "flex", columnGap: "16px" }}>
-                  <CustomTextField
-                    placeholder="e.g., 1"
-                    value={settings.numberValue}
-                    type="number"
-                    onChange={(e) =>
-                      handleQRCodeChanges("number", e.target.value)
-                    }
-                  />
-                  <CustomTextField
-                    placeholder="e.g., RAM"
-                    value={settings.stringValue}
-                    onChange={(e) =>
-                      handleQRCodeChanges("string", e.target.value)
-                    }
-                  />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-start",
+                  }}
+                >
+                  <div style={{ display: "flex", columnGap: "16px" }}>
+                    <CustomTextField
+                      placeholder="e.g., 1"
+                      value={settings.numberValue}
+                      type="number"
+                      onChange={(e) =>
+                        handleQRCodeChanges("number", e.target.value)
+                      }
+                    />
+                    <CustomTextField
+                      placeholder="e.g., RAM"
+                      value={settings.stringValue}
+                      onChange={(e) =>
+                        handleQRCodeChanges("string", e.target.value)
+                      }
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           {settings.dynamicValue &&
-            settings.dynamicValue == "DeviceDetail" &&
+            settings.dynamicValue === "DeviceDetail" &&
             settings.showRadioGroup && (
               <RadioGroup
                 value={settings.selectedRadioOption}
@@ -182,6 +183,8 @@ const CustomElementsEditor = ({
         "newsTextColor",
         "tickerColor",
         "newsColor",
+        "textColor",
+        "foregroundColor",
         "backgroundColor",
         "borderColor",
         "buttonTextColor",
@@ -204,7 +207,7 @@ const CustomElementsEditor = ({
 
   const handleQRCodeChanges = (field, value) => {
     let updatedSettings = { ...settings };
-    if (field == "string" || field == "number") {
+    if (field === "string" || field === "number") {
       if (field === "string") {
         updatedSettings = handleStringChange(updatedSettings, value);
       } else {
@@ -217,16 +220,16 @@ const CustomElementsEditor = ({
     }
 
     if (
-      (field == "string" || field == "number" || field == "radio") &&
-      updatedSettings.typeText == "static"
+      (field === "string" || field === "number" || field === "radio") &&
+      updatedSettings.typeText === "static"
     ) {
       onApplySettings(updatedSettings, false);
     } else if (
-      updatedSettings.typeText == "static" ||
-      (updatedSettings.typeText == "dynamic" &&
+      updatedSettings.typeText === "static" ||
+      (updatedSettings.typeText === "dynamic" &&
         updatedSettings.dynamicValue !== "DeviceDetail" &&
         updatedSettings.dynamicValue !== "") ||
-      (updatedSettings.dynamicValue == "DeviceDetail" &&
+      (updatedSettings.dynamicValue === "DeviceDetail" &&
         (updatedSettings.stringValue !== "" ||
           updatedSettings.selectedRadioOption !== ""))
     ) {
@@ -236,7 +239,7 @@ const CustomElementsEditor = ({
     }
   };
   const handleOnClick = async (field) => {
-    // if (field.groupLabel == "News Ticker Data") {
+    // if (field.groupLabel === "News Ticker Data") {
     //   try {
     //     const response = await postRequestWithToken(
     //       "/api/v1/clients/rss/getRssFeed",
@@ -251,7 +254,7 @@ const CustomElementsEditor = ({
     //   } catch (error) {
     //     console.error("Error:", error);
     //   }
-    // } else if (field.groupLabel == "Embed Style") {
+    // } else if (field.groupLabel === "Embed Style") {
     //   let updatedSettings = { ...settings };
     //   updatedSettings[field.name] = settings[field.functionProp];
     //   onApplySettings(updatedSettings, false);
@@ -271,7 +274,7 @@ const CustomElementsEditor = ({
     };
 
     const activeObj = canvas.getActiveObject();
-    if (activeObj.type == "QRCode") {
+    if (activeObj.type === "QRCode") {
       newSettings = convertStaticDynamicQRText(newSettings);
     }
     activeObj.set("settings", newSettings);
@@ -294,7 +297,6 @@ const CustomElementsEditor = ({
     }
     // setOpenPreviewDialog(false);
   };
-
   const renderField = (
     field: FabricElementOptionSchema,
     index: number,
@@ -336,7 +338,7 @@ const CustomElementsEditor = ({
             }}
             checked={settings?.typeText === field.initValue}
             onChange={(e) => {
-              if (selectedObject.type == "QRCode") {
+              if (selectedObject.type === "QRCode") {
                 handleQRCodeChanges(field.type, field.initValue);
               }
             }}
@@ -350,12 +352,12 @@ const CustomElementsEditor = ({
             value={settings[field.name]}
             options={field.options}
             label={field.name}
-            type={field.name == "fontSize" ? "number" : "string"}
+            type={field.name === "fontSize" ? "number" : "string"}
             onChange={(e) => handleChange(e, field.name)}
           />
         );
       case "autocompleteVirtualized":
-        if (selectedObject.type == "QRCode") {
+        if (selectedObject.type === "QRCode") {
           return (
             <AutocompleteVirtualized
               style={{ width: "70%" }}

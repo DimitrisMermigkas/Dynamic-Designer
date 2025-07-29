@@ -53,7 +53,7 @@ const ItemMenu = ({
       <MenuItem onClick={() => itemMenuClick("bringToFront")}>
         {t("DesignerTranslations.t.bringToFront")}
       </MenuItem>
-      <MenuItem onClick={() => itemMenuClick("bringForwards")}>
+      <MenuItem onClick={() => itemMenuClick("bringForward")}>
         {t("DesignerTranslations.t.bringForwards")}
       </MenuItem>
       <MenuItem onClick={() => itemMenuClick("duplicate")}>

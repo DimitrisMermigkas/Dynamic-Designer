@@ -26,6 +26,7 @@ interface FabricPageState {
   designs: Design[];
   isFirstVisit: boolean;
   MsgShownToday: string;
+  fontList: string[];
 }
 
 const INITIAL_STATE: FabricPageState = {
@@ -40,6 +41,7 @@ const INITIAL_STATE: FabricPageState = {
   designs: [mockInitialDesign],
   isFirstVisit: true,
   MsgShownToday: "",
+  fontList: [],
 };
 
 const reducer = createSlice({
@@ -91,6 +93,12 @@ const reducer = createSlice({
       return {
         ...state,
         activeShape: action.payload,
+      };
+    },
+    setFontList: (state, action) => {
+      return {
+        ...state,
+        fontList: action.payload,
       };
     },
     // Design actions

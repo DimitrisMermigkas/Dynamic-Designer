@@ -195,17 +195,17 @@ const EditorMapper = ({
     },
   ] as const;
 
-  if (type == "Multimedia") index = 0;
-  else if (type == "IText") index = 1;
+  if (type === "Multimedia") index = 0;
+  else if (type === "IText") index = 1;
   else if (
-    type == "RSSFeed" ||
-    type == "Button" ||
-    type == "Weather" ||
-    type == "Embed" ||
+    type === "RSSFeed" ||
+    type === "Button" ||
+    type === "Weather" ||
+    type === "Embed" ||
     "QRCode"
   )
     index = 2;
-  // else if (type == "QRCode") index = 3;
+  // else if (type === "QRCode") index = 3;
   const selectedTab = componentMap[index];
 
   if (!selectedTab) {
@@ -291,14 +291,14 @@ const ObjectOptions = ({
           // modifiedObject.type !== "activeSelection"
         ) {
           if (
-            (modifiedObject.id == "pointer-1" ||
-              modifiedObject.id == "pointer-2") &&
+            (modifiedObject.id === "pointer-1" ||
+              modifiedObject.id === "pointer-2") &&
             modifiedObject.isPoint
           ) {
             const line = canvas
               .getObjects()
               .find(
-                (o) => o.id == modifiedObject.referenceId && o.type == "Line"
+                (o) => o.id === modifiedObject.referenceId && o.type === "Line"
               );
             modifiedObject = line;
           }
@@ -314,15 +314,15 @@ const ObjectOptions = ({
   }, [canvas, pxToPercentage]);
 
   const handleSelectedObjectChange = (key, value) => {
-    if (key == "fontFamily") {
+    if (key === "fontFamily") {
       setFontFamily(value);
-    } else if (key == "fontSize") {
+    } else if (key === "fontSize") {
       setFontSize(value);
-    } else if (key == "textAlign") {
+    } else if (key === "textAlign") {
       setTextAlignment(value);
-    } else if (key == "fill") {
+    } else if (key === "fill") {
       setTextColor(value);
-    } else if (key == "stroke") {
+    } else if (key === "stroke") {
       setStrokeColor(value);
       if (!selectedObject.strokeWidth) {
         setSelectedObject((prevObject) => ({
@@ -331,22 +331,22 @@ const ObjectOptions = ({
         }));
         setStrokeWidth(1);
       }
-    } else if (key == "backgroundColor") {
+    } else if (key === "backgroundColor") {
       setBackgroundColor(value);
-    } else if (key == "strokeWidth") {
+    } else if (key === "strokeWidth") {
       setSelectedObject((prevObject) => ({
         ...prevObject,
         strokeWidth: value,
       }));
       setStrokeWidth(value);
-    } else if (key == "opacity") {
+    } else if (key === "opacity") {
       setOpacity(value);
-    } else if (key == "angle") {
+    } else if (key === "angle") {
       setAngle(value);
-    } else if (key == "radius") {
+    } else if (key === "radius") {
       setRadius(value);
     }
-    if (key == "radius") {
+    if (key === "radius") {
       setSelectedObject((prevObject) => ({
         ...prevObject,
         rx: value,
@@ -361,12 +361,14 @@ const ObjectOptions = ({
   };
 
   const handleSelectedObjectToggle = (key, value) => {
-    if (key == "bold") {
+    if (key === "bold") {
       setTextStyle("fontWeight", value ? "bold" : "normal");
-    } else if (key == "italic") {
+    } else if (key === "italic") {
       setTextStyle("fontStyle", value ? "italic" : "normal");
-    } else if (key == "underline") {
+    } else if (key === "underline") {
       setTextStyle("underline", value);
+    } else if (key === "fontSize") {
+      setTextStyle("fontSize", value);
     }
     // setSelectedObject((prevObject) => ({
     //   ...prevObject,
@@ -376,9 +378,9 @@ const ObjectOptions = ({
 
   const checkifObjCanFillStroke = (selectedObject) => {
     if (
-      selectedObject?.superType == "Multimedia" ||
-      // selectedObject?.type == "QRCode" ||
-      (selectedObject?.type == "IText" && selectedObject?.isEditing)
+      selectedObject?.superType === "Multimedia" ||
+      // selectedObject?.type === "QRCode" ||
+      (selectedObject?.type === "IText" && selectedObject?.isEditing)
     ) {
       return true;
     } else {
@@ -525,7 +527,7 @@ const ObjectOptions = ({
                 ]}
                 value={!pxToPercentage ? "pixels" : "percentage"}
                 onChange={(value) => {
-                  if (value == "pixels") setPxToPercentage(false);
+                  if (value === "pixels") setPxToPercentage(false);
                   else setPxToPercentage(true);
                 }}
               />
@@ -569,7 +571,7 @@ const ObjectOptions = ({
                 </div>
               </div>
             )}
-            {selectedObject && selectedObject?.type == "Multimedia" && (
+            {selectedObject && selectedObject?.type === "Multimedia" && (
               <FormControlLabel
                 control={
                   <CustomStyledCheckBox
@@ -587,7 +589,7 @@ const ObjectOptions = ({
         )}
       </div>
       {((selectedObject?.superType && selectedObject?.type !== "Line") ||
-        selectedObject?.type == "IText") && (
+        selectedObject?.type === "IText") && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography
@@ -596,7 +598,7 @@ const ObjectOptions = ({
                 color: theme.palette.text.secondary,
               }}
             >
-              {selectedObject.type == "IText"
+              {selectedObject.type === "IText"
                 ? `Text ${t("GeneralTranslations.t.settings")}`
                 : `${selectedObject.type} ${t(
                     "GeneralTranslations.t.settings"
@@ -614,12 +616,12 @@ const ObjectOptions = ({
               aspectRatio={aspectRatio}
               handleChangeAspectRatio={handleChangeAspectRatio}
               fontFamily={selectedObject.fontFamily}
-              fontSize={selectedObject.fontSize}
+              fontSize={toggleBtnGroupFont?.fontSize}
               onFontFamilyChange={(value) =>
                 handleSelectedObjectChange("fontFamily", value)
               }
               onFontSizeChange={(value) =>
-                handleSelectedObjectChange("fontSize", value)
+                handleSelectedObjectToggle("fontSize", value)
               }
               bold={toggleBtnGroupFont?.bold}
               italic={toggleBtnGroupFont?.italic}
@@ -760,7 +762,7 @@ const ObjectOptions = ({
                         style={{ marginRight: 8, width: 24, height: 24 }}
                       />
                       <Typography>
-                        {selectedObject?.type == "Multimedia"
+                        {selectedObject?.type === "Multimedia"
                           ? selectedObject?._objects[0].strokeWidth
                             ? `${selectedObject?._objects[0].strokeWidth}px`
                             : `Borderless`
@@ -781,7 +783,7 @@ const ObjectOptions = ({
           </Accordion>
         </>
       )}
-      {selectedObject && selectedObject?.type == "Button" && (
+      {selectedObject && selectedObject?.type === "Button" && (
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography
@@ -827,7 +829,7 @@ const ObjectOptions = ({
           },
         }}
       >
-        {anchorEl?.component == "angle" && (
+        {anchorEl?.component === "angle" && (
           <CustomSlider
             value={objectAngle}
             valueLabelDisplay="auto"
@@ -838,7 +840,7 @@ const ObjectOptions = ({
             onChange={setAngle}
           />
         )}
-        {anchorEl?.component == "fill" && (
+        {anchorEl?.component === "fill" && (
           <CustomSlider
             value={objectColor.fillAlpha}
             valueLabelDisplay="auto"
@@ -849,7 +851,7 @@ const ObjectOptions = ({
             onChange={setColorOpacity("fill")}
           />
         )}
-        {anchorEl?.component == "stroke" && (
+        {anchorEl?.component === "stroke" && (
           <CustomSlider
             value={objectColor.strokeAlpha}
             valueLabelDisplay="auto"

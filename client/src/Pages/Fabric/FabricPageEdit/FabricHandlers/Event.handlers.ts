@@ -75,7 +75,6 @@ const useEventHandlers = ({
       activeObj.text.split("\n"),
       activeObj.selectionStart
     );
-    let cursorPosDelete;
     if (backspace) {
       // get the index of the last character before the cursor
       const cursorIndex = activeObj.selectionStart - 1;
@@ -94,15 +93,7 @@ const useEventHandlers = ({
             startIndex--;
           }
 
-          // Get the deleted word and its length
-          const deletedWord = objText.slice(startIndex, endIndex);
           const deletedLength = endIndex - startIndex;
-
-          //get cursorPosition to be after deletion
-          cursorPosDelete = startIndex;
-          // remove the matched word from the original string
-          const newText =
-            objText.slice(0, startIndex) + objText.slice(endIndex);
 
           // Remove dynamic styling from the word
           let newStyles = {};
@@ -131,20 +122,15 @@ const useEventHandlers = ({
           dynamicRanges.sort((a, b) => b.start - a.start);
           // Remove styles from dynamicRanges
           dynamicRanges.forEach((range) => {
-            if (range.start == startIndex) {
+            if (range.start === startIndex) {
               for (let i = range.start; i <= range.end; i++) {
                 delete activeObj.styles[line][i];
               }
             }
           });
-          // activeObj.styles[line] = newStyles;
           activeObj.setSelectionStart(startIndex);
           activeObj.setSelectionEnd(endIndex);
 
-          // activeObj.set("text", "");
-          // // re-render the canvas
-          // canvas.renderAll();
-          // addDynamicText(newText, "delete", cursorPosDelete);
           canvas.renderAll();
         }
       }
@@ -162,13 +148,7 @@ const useEventHandlers = ({
         ) {
           endIndex++;
         }
-        // extract the matched word and remove it from the original string
-        const word = objText.slice(startIndex, endIndex);
         const deletedLength = endIndex - startIndex;
-        const newText = objText.slice(0, startIndex) + objText.slice(endIndex);
-
-        //get cursorPosition to be after deletion
-        cursorPosDelete = startIndex;
 
         // Remove dynamic styling from the word
         let newStyles = {};
@@ -197,7 +177,7 @@ const useEventHandlers = ({
         dynamicRanges.sort((a, b) => b.start - a.start);
         // Remove styles from dynamicRanges
         dynamicRanges.forEach((range) => {
-          if (range.start == startIndex) {
+          if (range.start === startIndex) {
             for (let i = range.start; i <= range.end; i++) {
               delete activeObj.styles[line][i];
             }
@@ -205,11 +185,7 @@ const useEventHandlers = ({
         });
         activeObj.setSelectionStart(startIndex);
         activeObj.setSelectionEnd(endIndex);
-        // activeObj.styles[line] = newStyles;
-        // activeObj.set("text", "");
-        // // re-render the canvas
         canvas.renderAll();
-        // addDynamicText(newText, "delete", cursorPosDelete);
       }
     }
   };
@@ -219,17 +195,12 @@ const useEventHandlers = ({
       return; // nothing to do
     }
 
-    const text = activeObj.text;
     const startIdx = activeObj.selectionStart;
 
     const textLines = activeObj.textLines;
-    const { line, startLineIdx, endLineIdx } = findLineBasedOnCursosPos(
-      textLines,
-      startIdx
-    );
+    const { endLineIdx } = findLineBasedOnCursosPos(textLines, startIdx);
 
     const charBefore = startIdx > 0 ? startIdx - 1 : null;
-    const charCurrent = startIdx;
     const charAfter = startIdx < endLineIdx ? startIdx : null;
 
     const styleBefore =
@@ -246,14 +217,14 @@ const useEventHandlers = ({
       styleBefore?.type !== "dynamic";
 
     if (onlyBefore) {
-      if (event.key == "Backspace") {
+      if (event.key === "Backspace") {
         deleteDynamicWord(activeObj, true);
       } else {
         activeObj.setSelectionStart(startIdx + 1);
         activeObj.setSelectionEnd(startIdx + 1);
       }
     } else if (onlyAfter) {
-      if (event.key == "Delete") {
+      if (event.key === "Delete") {
         deleteDynamicWord(activeObj, false);
       } else {
         activeObj.setSelectionStart(startIdx - 1);
@@ -274,15 +245,15 @@ const useEventHandlers = ({
   useEffect(() => {
     const handleMouseDown = (event) => {
       const isSelectionEnabled = canvas.get("selection");
-      if (event.e.buttons == 1 && !isSelectionEnabled) {
+      if (event.e.buttons === 1 && !isSelectionEnabled) {
         canvas.lastPosX = event.e.clientX;
         canvas.lastPosY = event.e.clientY;
       }
-      if (event.button == 1) {
+      if (event.button === 1) {
         if (startDrawing) {
-          if (drawingType == "Line") {
+          if (drawingType === "Line") {
             createLine(event);
-          } else if (drawingType == "polygon") {
+          } else if (drawingType === "polygon") {
             createPolygon(event);
           }
         } else if (selectArea) {
@@ -292,7 +263,7 @@ const useEventHandlers = ({
     };
     const handleMouseMove = (event) => {
       const isSelectionEnabled = canvas.get("selection");
-      if (event.e.buttons == 1 && !isSelectionEnabled) {
+      if (event.e.buttons === 1 && !isSelectionEnabled) {
         const e = event.e;
         const canvasWidth = canvas.getWidth();
         const canvasHeight = canvas.getHeight();
@@ -329,16 +300,16 @@ const useEventHandlers = ({
       const drawingMode = store.getState().fabricPageReducer.startDrawing;
 
       if (drawingMode) {
-        if (drawingType == "Line") {
+        if (drawingType === "Line") {
           previewLine(event);
-        } else if (drawingType == "polygon") {
+        } else if (drawingType === "polygon") {
           previewPolygon(event);
         }
       }
     };
     const handleMouseUp = (event) => {
       const isSelectionEnabled = canvas.get("selection");
-      if (event.e.buttons == 0 && !isSelectionEnabled) {
+      if (event.e.buttons === 0 && !isSelectionEnabled) {
         canvas.setViewportTransform(canvas.viewportTransform);
       }
       if (selectArea && startPointer) {
@@ -348,7 +319,7 @@ const useEventHandlers = ({
 
     // document.onkeydown = function (e) {
     //   const keycode = e.key;
-    //   if (keycode == "Escape") {
+    //   if (keycode === "Escape") {
     //     if (startDrawing) {
     //       cancelLine(canvas);
     //     }
@@ -382,7 +353,7 @@ const useEventHandlers = ({
       // Handle the dropped item here
       const itemData: any = item;
       // Get the canvas element
-      const canvasElement = canvas.upperCanvasEl || canvas.lowerCanvasEl;
+      // const canvasElement = canvas.upperCanvasEl || canvas.lowerCanvasEl;
       const newLandingAreaRect = new fabric.Rect({
         width: landingAreaRectRef.current.dimensions.width, // Set your desired landing area width
         height: landingAreaRectRef.current.dimensions.height, // Set your desired landing area height
@@ -396,13 +367,13 @@ const useEventHandlers = ({
         selectable: false,
         evented: false,
       });
-      if (itemData.Type == "Media") addMedia([itemData], newLandingAreaRect);
+      if (itemData.Type === "Media") addMedia([itemData], newLandingAreaRect);
       else addMedia([itemData], newLandingAreaRect);
       landingAreaRectRef.current = null;
       const drawer = document.getElementById("SecondDrawerV2");
       if (drawer) {
         drawer.style.transition = "opacity 0.3s"; // Add a transition to opacity with a duration of 0.3 seconds
-        if (drawer.style.opacity == "0") drawer.style.opacity = "1";
+        if (drawer.style.opacity === "0") drawer.style.opacity = "1";
       }
     },
     collect: (monitor) => ({
@@ -439,11 +410,11 @@ const useEventHandlers = ({
             return;
           }
           if (
-            (target.id == "pointer-1" || target.id == "pointer-2") &&
+            (target.id === "pointer-1" || target.id === "pointer-2") &&
             target.isPoint
           ) {
             updateLine(target);
-          } else if (target.type == "Line") {
+          } else if (target.type === "Line") {
             removeCirclesFromLines();
           }
         }
@@ -540,7 +511,7 @@ const useEventHandlers = ({
               ZoomX: 1,
               ZoomY: 1,
             });
-            if (objects.length > 1 && media.getElement().localName == "img") {
+            if (objects.length > 1 && media.getElement().localName === "img") {
               multiMediaObjectFit(
                 canvas,
                 backgroundRect,
@@ -580,9 +551,9 @@ const useEventHandlers = ({
             target.setCoords();
             canvas.renderAll();
           } else {
-            if (target.type == "activeSelection") {
+            if (target.type === "activeSelection") {
               target.getObjects().forEach((obj) => {
-                if (obj.type == "Multimedia") {
+                if (obj.type === "Multimedia") {
                   if (obj.path !== "") {
                     // Get the objects within the group
                     const objects = obj.getObjects();
@@ -613,7 +584,7 @@ const useEventHandlers = ({
                     });
                     if (
                       objects.length > 1 &&
-                      media.getElement().localName == "img"
+                      media.getElement().localName === "img"
                     ) {
                       multiMediaObjectFit(
                         canvas,
@@ -628,7 +599,7 @@ const useEventHandlers = ({
                   const newHeightObj = obj.height * target.scaleY;
                   const newLeftObj = obj.left * target.scaleX;
                   const newTopObj = obj.top * target.scaleY;
-                  if (obj.type == "Ellipse") {
+                  if (obj.type === "Ellipse") {
                     const newRxObj = obj.rx * target.scaleX;
                     const newRyObj = obj.ry * target.scaleY;
                     obj.set({
@@ -649,7 +620,7 @@ const useEventHandlers = ({
                 }
               });
             }
-            if (target.type == "Ellipse")
+            if (target.type === "Ellipse")
               target.set({
                 ry: newHeightTarget / 2,
                 rx: newWidthTarget / 2,
@@ -684,7 +655,7 @@ const useEventHandlers = ({
         const activeObject = canvas.getActiveObject();
         if (
           activeObject &&
-          activeObject.type == "IText" &&
+          activeObject.type === "IText" &&
           activeObject.isEditing
         ) {
           const { selectionStart, selectionEnd } = activeObject;
@@ -702,10 +673,10 @@ const useEventHandlers = ({
 
             charStyle = hasCharTextStyling
               ? activeObject.styles[line][
-                  selectionStart == 0 ? selectionStart + 1 : selectionStart
+                  selectionStart === 0 ? selectionStart + 1 : selectionStart
                 ]
               : null;
-            if (charStyle && charStyle.type == "dynamic") {
+            if (charStyle && charStyle.type === "dynamic") {
               const wordBoundaries = getWordBoundaries(
                 activeObject.text,
                 selectionStart
@@ -744,18 +715,18 @@ const useEventHandlers = ({
         const isSelectionEnabled = canvas.get("selection");
         if (event.target && event.target.type !== "addMediaArea") {
           if (
-            event.target.id == "pointer-1" ||
-            event.target.id == "pointer-2"
+            event.target.id === "pointer-1" ||
+            event.target.id === "pointer-2"
           ) {
             const line = canvas
               .getObjects()
-              .find((o) => o.id == event.target.referenceId);
+              .find((o) => o.id === event.target.referenceId);
             setSelectedObject(line);
           } else {
             setSelectedObject(event.target);
             canvas.fire("otherObject:selected", { target: event.target });
           }
-          if (event.target.type == "Line") createCirclesForLine(event.target);
+          if (event.target.type === "Line") createCirclesForLine(event.target);
         } else {
           removeCirclesFromLines();
           setSelectedObject(null);
@@ -789,15 +760,15 @@ const useEventHandlers = ({
       canvas.on("object:modified", function (e) {
         // Rerender custom objects and add circles to lines
         const modifiedObject = e.target;
-        if (e.action == "rotate") {
+        if (e.action === "rotate") {
           setAngle(e.target.angle);
         }
         // Trigger rerender of custom elements if scale changed
-        if (modifiedObject.superType == "customObject") {
+        if (modifiedObject.superType === "customObject") {
           if (
-            e.action == "scale" ||
-            e.action == "scaleY" ||
-            e.action == "scaleX"
+            e.action === "scale" ||
+            e.action === "scaleY" ||
+            e.action === "scaleX"
           ) {
             const objSettings = {
               ...modifiedObject,
@@ -825,16 +796,16 @@ const useEventHandlers = ({
               modifiedObject.type
             );
           }
-        } else if (modifiedObject.type == "Line") {
+        } else if (modifiedObject.type === "Line") {
           createCirclesForLine(modifiedObject);
-        } else if (modifiedObject.type == "activeSelection") {
+        } else if (modifiedObject.type === "activeSelection") {
           const objects = modifiedObject.getObjects();
           objects.forEach((object) => {
             if (object.superType) {
               if (
-                e.action == "scale" ||
-                e.action == "scaleY" ||
-                e.action == "scaleX"
+                e.action === "scale" ||
+                e.action === "scaleY" ||
+                e.action === "scaleX"
               ) {
                 const objSettings = {
                   ...object,
@@ -888,13 +859,13 @@ const useEventHandlers = ({
         const drawer = document.getElementById("SecondDrawerV2");
         if (drawer) {
           drawer.style.transition = "opacity 0.3s"; // Add a transition to opacity with a duration of 0.3 seconds
-          if (drawer.style.opacity == "1") drawer.style.opacity = "0";
+          if (drawer.style.opacity === "1") drawer.style.opacity = "0";
         }
         let dimensions;
         if (
           event.target &&
           previousTargetRef.current === event.target &&
-          event.target.type == "addMediaArea"
+          event.target.type === "addMediaArea"
         ) {
           return; // Skip if the target hasn't changed
         }
@@ -902,7 +873,7 @@ const useEventHandlers = ({
         previousTargetRef.current = event.target; // Update the previous target
         console.log("🚀 ~ event:", event);
 
-        if (event.target && event.target.type == "addMediaArea") {
+        if (event.target && event.target.type === "addMediaArea") {
           const target = event.target;
           dimensions = {
             left: target.left,
@@ -916,12 +887,12 @@ const useEventHandlers = ({
             left: event.e.layerX - 75,
             top: event.e.layerY - 70,
             width:
-              selectedDesign.Configuration.screens[screenIndex].orientation ==
+              selectedDesign.Configuration.screens[screenIndex].orientation ===
               "landscape"
                 ? 576
                 : 154,
             height:
-              selectedDesign.Configuration.screens[screenIndex].orientation ==
+              selectedDesign.Configuration.screens[screenIndex].orientation ===
               "landscape"
                 ? 324
                 : 275,
@@ -950,7 +921,7 @@ const useEventHandlers = ({
           canvas.add(newLandingAreaRect);
           landingAreaRectRef.current = newLandingAreaRect;
         } else {
-          if (event.target && event.target.type == "addMediaArea") {
+          if (event.target && event.target.type === "addMediaArea") {
             // Smoothly update the position and size of the landing area rectangle
             const animationDuration = 100; // Adjust the duration as needed
             landingAreaRectRef.current.set({
@@ -991,6 +962,13 @@ const useEventHandlers = ({
               width: dimensions.width,
               height: dimensions.height,
               fill: dimensions.onTarget ? "#00FF004C" : "#BDBDBDFF", // Adjust the fill color and opacity
+              dimensions: {
+                left: dimensions.left,
+                top: dimensions.top,
+                width: dimensions.width,
+                height: dimensions.height,
+                onTarget: dimensions.onTarget,
+              },
             });
             canvas.requestRenderAll();
           }
@@ -1003,13 +981,13 @@ const useEventHandlers = ({
         const drawer = document.getElementById("SecondDrawerV2");
         if (drawer) {
           drawer.style.transition = "opacity 0.3s"; // Add a transition to opacity with a duration of 0.3 seconds
-          if (drawer.style.opacity == "0") drawer.style.opacity = "1";
+          if (drawer.style.opacity === "0") drawer.style.opacity = "1";
         }
       });
       canvas.on("drop", function (event) {
         event.e.preventDefault();
         const targetArea = event.target;
-        if (targetArea && targetArea.type == "addMediaArea") {
+        if (targetArea && targetArea.type === "addMediaArea") {
           const elementToDelete = document.querySelector(
             `[data-name=${targetArea.dataName}]`
           );
@@ -1026,7 +1004,7 @@ const useEventHandlers = ({
 
         const canvasContainer: HTMLElement =
           document.querySelector(".canvas-container");
-        if (delta > 0 && zoom == 1) {
+        if (delta > 0 && zoom === 1) {
           canvas.setViewportTransform([viewportZoom, 0, 0, viewportZoom, 0, 0]);
         } else {
           zoom *= 0.9996 ** delta;
@@ -1081,7 +1059,7 @@ const useEventHandlers = ({
         const objSelected = canvas.getActiveObject() || selectedObject;
         const keycode = e.key;
 
-        if (keycode == "Escape" && startDrawing) {
+        if (keycode === "Escape" && startDrawing) {
           cancelLine(canvas);
         }
         const canvasRatio =
@@ -1090,7 +1068,7 @@ const useEventHandlers = ({
           canvas.viewportZoom;
 
         if (objSelected) {
-          if (objSelected.type == "IText" && objSelected.isEditing) {
+          if (objSelected.type === "IText" && objSelected.isEditing) {
             handleDynamicTextCursor(objSelected, e);
           } else if (objSelected.type === "activeSelection") {
             // Check if any TextField is focused
@@ -1109,7 +1087,7 @@ const useEventHandlers = ({
                   setSelectedObject(null);
                   canvas.fire("objectPos:changed", { canvas: canvas });
                   canvas.renderAll();
-
+                  break;
                 case "ArrowUp":
                   updateSizeAndPosition(
                     "top",
@@ -1150,10 +1128,10 @@ const useEventHandlers = ({
                 case "Delete":
                   canvas.remove(objSelected);
                   setSelectedObject(null);
-                  if (objSelected.type == "Line") removeCirclesFromLines();
+                  if (objSelected.type === "Line") removeCirclesFromLines();
                   canvas.fire("objectPos:changed", { canvas: canvas });
                   canvas.renderAll();
-
+                  break;
                 case "ArrowUp":
                   updateSizeAndPosition(
                     "top",
